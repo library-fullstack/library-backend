@@ -1,47 +1,79 @@
 import connection from "../config/db.ts";
-import { User } from "../models/user.model.ts";
+import { Request, Response } from "express";
+import { User, UserInput, UserUpdate } from "../models/user.model.ts";
 
-export const UserService = {
-  async getAll(): Promise<User[]> {
-    const [rows] = await connection.query("SELECT * FROM users");
-    return rows as User[];
-  },
+const getAllUser = async (): Promise<User[] | null> => {
+  const [rows] = await connection.query<User[]>("SELECT * FROM users");
 
-  // tạo user mới
-  async createUser(user: User): Promise<void> {
-    // check studentId của user xem đã từng tồn tại hay chưa
-    const [studentIdExists] = await connection.query(
-      "SELECT id FROM users WHERE studentId = ?",
-      [user.studentId]
-    );
-    // nếu tồn tại, throw
-    if ((studentIdExists as any[]).length > 0) {
-      throw new Error("Mã sinh viên đã được đăng ký");
-    }
-
-    // check email xem email đã từng tồn tại hay chưa
-    const [emailExists] = await connection.query(
-      "SELECT id FROM users WHERE email = ?",
-      [user.email]
-    );
-
-    // nếu tồn tại, throw
-    if ((emailExists as any[]).length > 0) {
-      throw new Error("Email đã được đăng ký");
-    }
-
-    // sql
-    const sql =
-      "INSERT INTO users (studentId, full_name, email, password, phone, role) VALUES (?, ?, ?, ?, ?, ?)";
-
-    // query
-    await connection.query(sql, [
-      user.studentId,
-      user.fullName,
-      user.email,
-      user.password,
-      user.phone || null,
-      user.role || "STUDENT",
-    ]);
-  },
+  return rows;
 };
+
+// get user bằng id
+const getUserById = async (userId: string): Promise<User | null> => {
+  const [rows] = await connection.query<User[]>(
+    "SELECT * FROM users WHERE id = ?",
+    [userId]
+  );
+  return rows.length ? rows[0] : null;
+};
+
+// tạo user mới
+const createUser = async (user: UserInput): Promise<void> => {
+  // check studentId
+  const [existStudentId] = await connection.query<User[]>(
+    "SELECT id FROM users WHERE studentId = ?",
+    [user.studentId]
+  );
+
+  if (existStudentId.length > 0) {
+    throw new Error("Mã sinh viên đã được đăng ký");
+  }
+
+  // check mail
+  const [existEmail] = await connection.query<User[]>(
+    "SELECT id FROM users WHERE email = ?",
+    [user.email]
+  );
+
+  if (existEmail.length > 0) {
+    throw new Error("Email đã được đăng ký");
+  }
+
+  const sql =
+    "INSERT INTO users (studentId, full_name, email, password, phone, role) VALUES (?, ?, ?, ?, ?, ?)";
+
+  // query
+  await connection.query(sql, [
+    user.studentId,
+    user.fullName,
+    user.email,
+    user.password,
+    user.phone || null,
+    user.role || "STUDENT",
+  ]);
+};
+
+// update user bằng id
+const updateUserById = async (
+  user: UserUpdate,
+  userId: string
+): Promise<void> => {
+  const sql =
+    "UPDATE users SET full_name = ?, email = ?, password = ?, phone = ? WHERE id = ?";
+
+  await connection.query(sql, [
+    user.fullName,
+    user.email,
+    user.password,
+    user.phone,
+    userId,
+  ]);
+};
+
+// xoá user bằng id
+const deleteUserById = async (userId: string): Promise<void> => {
+  const sql = "DELETE FROM users WHERE id = ?";
+  await connection.query(sql, [userId]);
+};
+
+export { getAllUser, createUser, getUserById, deleteUserById, updateUserById };
