@@ -74,7 +74,7 @@ const updateUserByIdController = async (
   const { fullName, email, password, phone } = req.body;
   const userId = req.params.userId;
   try {
-    if (!fullName || !email || !password || !phone) {
+    if (!userId || !fullName || !email || !password || !phone) {
       res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
       return;
     }

@@ -1,11 +1,10 @@
 import connection from "../config/db.ts";
-import { Request, Response } from "express";
 import { User, UserInput, UserUpdate } from "../models/user.model.ts";
 
 const getAllUser = async (): Promise<User[] | null> => {
   const [rows] = await connection.query<User[]>("SELECT * FROM users");
 
-  return rows;
+  return rows.length ? rows : null;
 };
 
 // get user bằng id
