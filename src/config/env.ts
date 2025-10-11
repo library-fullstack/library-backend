@@ -17,6 +17,7 @@ type Env = {
   DB_USER: string;
   DB_PASSWORD: string;
   DB_DATABASE: string;
+  JWT_SECRET: string;
 };
 
 // export các biến môi trường đã kiểm tra
@@ -28,4 +29,5 @@ export const env: Env = {
   DB_USER: requireEnv("DB_USER"),
   DB_PASSWORD: requireEnv("DB_PASSWORD"),
   DB_DATABASE: requireEnv("DB_DATABASE"),
+  JWT_SECRET: requireEnv("JWT_SECRET"),
 };

@@ -1,20 +1,33 @@
-# Node modules
+# node & dependencies
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Build output
+# build output
+
 dist/
 build/
 *.tsbuildinfo
 
-# Env & secrets
-.env
-.env.local
-.env.*.local
+# environment files
 
-# Logs
+.env
+
+# các môi trường khác (local/dev/test/prod)
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+
+# mẫu .env
+!.env.example
+
+# logs và process ids
 logs/
 *.log
 *.log.*
@@ -23,17 +36,26 @@ pids/
 *.seed
 *.pid.lock
 
-# IDE / editor
+# IDE và editors
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 
-# Test coverage
+# test và coverage
 coverage/
 .nyc_output/
+jest-report/
+*.spec.ts
+*.test.ts
 
-# Temporary files
+# temporary / misc
 tmp/
 temp/
 *.tmp
+.cache/
+
+# docker any database
+
+docker-compose.yml
+Dockerfile

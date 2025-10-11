@@ -1,4 +1,4 @@
-import { Request, response, Response } from "express";
+import { Request, Response } from "express";
 import {
   getAllUser,
   getUserById,
@@ -9,6 +9,7 @@ import {
 
 import { UserInput, UserUpdate } from "../models/user.model.ts";
 
+// get all user
 const getAllUserController = async (
   req: Request,
   res: Response
@@ -23,6 +24,7 @@ const getAllUserController = async (
   res.json(users);
 };
 
+// get user bằng id
 const getUserByIdController = async (
   req: Request,
   res: Response
@@ -38,6 +40,7 @@ const getUserByIdController = async (
   res.json(user);
 };
 
+// tạo user
 const createUserController = async (
   req: Request<{}, {}, UserInput>,
   res: Response
@@ -67,6 +70,7 @@ const createUserController = async (
   }
 };
 
+// update user bằng id
 const updateUserByIdController = async (
   req: Request,
   res: Response
@@ -94,6 +98,7 @@ const updateUserByIdController = async (
   }
 };
 
+// xoá user bằng id
 const deleteUserByIdController = async (req: Request, res: Response) => {
   const userId = req.params.userId;
   try {

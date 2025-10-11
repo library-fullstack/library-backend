@@ -13,6 +13,8 @@ const access: PoolOptions = {
   maxIdle: 10,
   idleTimeout: 60000,
   queueLimit: 0,
+  timezone: "+07:00",
+  charset: "utf8mb4_0900_ai_ci",
 };
 
 // tạo pool connection

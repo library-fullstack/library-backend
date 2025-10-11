@@ -9,6 +9,7 @@ import {
 } from "../services/book.service.ts";
 import { Book, BookInput } from "../models/book.model.ts";
 
+// get all book
 const getAllBookController = async (
   req: Request,
   res: Response
@@ -23,22 +24,25 @@ const getAllBookController = async (
   res.json(books);
 };
 
+// get book theo id
 const getBookByIdController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const bookId = req.params.bookId;
-
-  if (!bookId) {
+  const bookId = Number(req.params.bookId);
+  if (!Number.isInteger(bookId)) {
+    res.status(400).json({ message: "bookId không hợp lệ" });
+    return;
+  }
+  const book = await getBookById(bookId);
+  if (!book) {
     res.status(404).json({ message: "Không tìm thấy sách" });
     return;
   }
-
-  const book = await getBookById(bookId);
-
   res.json(book);
 };
 
+// tạo book
 const createBookController = async (
   req: Request<{}, {}, BookInput>,
   res: Response
@@ -66,44 +70,41 @@ const createBookController = async (
   }
 };
 
+// update book theo id
 const updateBookByIdController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
+  const bookId = Number(req.params.bookId); // was userId (bug)
   const { title, author, category, price, stock, description } = req.body;
-  const bookId = req.params.userId;
 
-  try {
-    if (!title || !author || !category || !price || !stock) {
-      res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
-      return;
-    }
-
-    await updateBookById(
-      {
-        title,
-        author,
-        category,
-        price,
-        stock,
-        description,
-      },
-      bookId
-    );
-
-    res.status(201).json({ message: "Thêm sách thành công" });
-  } catch (err: any) {
-    res.status(400).json({ message: err.message });
+  if (!Number.isInteger(bookId)) {
+    res.status(400).json({ message: "bookId không hợp lệ" });
+    return;
   }
+  if (!title || !author || !category || price == null || stock == null) {
+    res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
+    return;
+  }
+  await updateBookById(
+    { title, author, category, price, stock, description },
+    bookId
+  );
+  res.status(200).json({ message: "Cập nhật sách thành công" });
 };
 
+// xoá book theo id
 const deleteBookByIdController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const bookId = req.params.bookId;
-
+  const bookId = Number(req.params.bookId);
+  if (!Number.isInteger(bookId)) {
+    res.status(400).json({ message: "bookId không hợp lệ" });
+    return;
+  }
   await deleteBookById(bookId);
+  res.status(200).json({ message: "Xoá sách thành công" });
 };
 
 export {

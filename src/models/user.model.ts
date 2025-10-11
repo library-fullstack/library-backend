@@ -12,14 +12,16 @@ interface User extends RowDataPacket {
   updatedAt?: Date;
 }
 
-type UserInput = {
+// form khi truyền dữ liệu user
+interface UserInput {
   studentId: string;
   fullName: string;
   email: string;
-  password: string;
+  password?: string;
   phone?: string;
-  role: string;
-};
+  role?: "STUDENT" | "ADMIN";
+  status?: "ACTIVE" | "INACTIVE";
+}
 
 type UserUpdate = {
   fullName?: string;
