@@ -1,8 +1,8 @@
-import connection from "../config/db";
-import { User, UserInput, UserUpdate } from "../models/user.model";
+import connection from "../config/db.ts";
+import { User, UserInput, UserUpdate } from "../models/user.model.ts";
 import { v4 as uuidv4 } from "uuid";
 // mã hoá password
-import { hashPassword } from "../utils/password";
+import { hashPassword } from "../utils/password.ts";
 
 const getAllUser = async (): Promise<User[] | null> => {
   const [rows] = await connection.query<User[]>("SELECT * FROM users");

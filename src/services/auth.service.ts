@@ -7,37 +7,53 @@ import {
 import { signToken } from "../utils/jwt.ts";
 import { verifyPassword } from "../utils/password.ts";
 
-// đăng ký
 const register = async (
   user: userModel.UserInput
 ): Promise<{ message: string }> => {
-  const safeUser: userModel.UserInput = { ...user, role: "STUDENT" as const };
+  // chỉ cho phép đăng ký sinh viên
+  const safeUser: userModel.UserInput = {
+    ...user,
+    role: "STUDENT" as const,
+  };
+
+  // check
+  if (!safeUser.studentId) {
+    throw new Error("Mã sinh viên là bắt buộc khi đăng ký sinh viên.");
+  }
+
   await createUser(safeUser);
   return { message: "Đăng ký thành công." };
 };
 
-//đăng nhập
 const login = async (
-  identifier: string, // có thể dùng email hoặc studentId để đăng nhập
+  identifier: string,
   password: string
 ): Promise<{ user: Omit<userModel.User, "password">; token: string }> => {
-  let user = await getUserByEmail(identifier);
+  let user = null;
 
-  if (!user) {
+  if (identifier.includes("@")) {
+    user = await getUserByEmail(identifier);
+  } else {
     user = await getUserByStudentId(identifier);
+    if (!user) {
+      user = await getUserByEmail(identifier);
+    }
   }
 
   if (!user) {
-    throw new Error("Email hoặc Mã sinh viên không tồn tại.");
+    throw new Error("Tài khoản không tồn tại hoặc đã bị vô hiệu hoá.");
   }
 
+  // kiểm tra mật khẩu
   const valid = await verifyPassword(password, user.password);
   if (!valid) {
     throw new Error("Sai mật khẩu.");
   }
 
+  // tạo token
   const token = signToken({ userId: user.id, role: user.role });
 
+  // bỏ mật khẩu khỏi response
   const { password: _, ...userWithoutPassword } = user;
 
   return { user: userWithoutPassword, token };
