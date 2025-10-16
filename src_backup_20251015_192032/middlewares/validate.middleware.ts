@@ -9,28 +9,19 @@ const validate =
     switch (schemaName) {
       case "createUser":
         schema = Joi.object({
-          student_id: Joi.when("role", {
+          studentId: Joi.when("role", {
             is: "STUDENT",
             then: Joi.string().required().messages({
-              "any.required": `"student_id" là bắt buộc với sinh viên`,
+              "any.required": `"studentId" là bắt buộc với sinh viên`,
             }),
             otherwise: Joi.string().allow(null, "").optional(),
           }),
+          fullName: Joi.string().required().messages({
+            "any.required": `"fullName" là bắt buộc`,
+          }),
+          email: Joi.string().email().required(),
           password: Joi.string().min(6).required(),
-          full_name: Joi.string().max(50).optional(),
-          email: Joi.string().email().optional(),
-          phone: Joi.string()
-            .pattern(/^0\d{9}$/)
-            .optional()
-            .messages({
-              "string.pattern.base": `"phone" (10 chữ số, bắt đầu bằng 0)`,
-            }),
-          role: Joi.string()
-            .valid("STUDENT", "LIBRARIAN", "MODERATOR", "ADMIN")
-            .default("STUDENT"),
-          status: Joi.string()
-            .valid("ACTIVE", "INACTIVE", "BANNED")
-            .default("ACTIVE"),
+          role: Joi.string().valid("STUDENT", "ADMIN").default("STUDENT"),
         });
         break;
 
@@ -54,12 +45,7 @@ const validate =
     }
 
     const { error } = schema.validate(req.body, { abortEarly: false });
-
     if (error) {
-      console.error(
-        "[Validation Error]",
-        error.details.map((d) => d.message)
-      );
       return res.status(400).json({
         message: "Dữ liệu không hợp lệ",
         details: error.details.map((d) => d.message),

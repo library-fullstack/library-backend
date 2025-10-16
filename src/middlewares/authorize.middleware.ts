@@ -1,11 +1,22 @@
 import { Request, Response, NextFunction } from "express";
 
+interface AuthenticatedRequest extends Request {
+  user?: {
+    userId: string;
+    role: string;
+  };
+}
+
 const authorize =
   (...allowedRoles: string[]) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    const role = (req as any).user?.role;
-    if (!role)
-      return res.status(403).json({ message: "Không có quyền truy cập" });
+  (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ message: "Chưa đăng nhập hoặc token không hợp lệ" });
+    }
+
+    const { role } = req.user;
 
     if (!allowedRoles.includes(role)) {
       return res
@@ -18,13 +29,20 @@ const authorize =
 
 const authorizeOrOwner =
   (...allowedRoles: string[]) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    const { userId, role } = (req as any).user;
-    const targetId = req.params.userId;
+  (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ message: "Chưa đăng nhập hoặc token không hợp lệ" });
+    }
 
+    const { userId, role } = req.user;
+    const targetId = req.params.userId || req.params.user_id;
+
+    // có quyền cao hơn thì bỏ qua
     if (allowedRoles.includes(role)) return next();
 
-    // cho phép user xem những thứ thuộc về user
+    // là chính chủ thì bỏ qua
     if (targetId && userId === targetId) return next();
 
     return res

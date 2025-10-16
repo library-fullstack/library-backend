@@ -1,36 +1,14 @@
 import { Request, Response } from "express";
-import {
-  getAllUser,
-  getUserById,
-  createUser,
-  updateUserById,
-  deleteUserById,
-} from "../services/user.service.ts";
-
-import { UserInput, UserUpdate } from "../models/user.model.ts";
-
-// get all user
-const getAllUserController = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const users = await getAllUser();
-
-  if (!users) {
-    res.status(404).json({ message: "Không tìm thấy người dùng" });
-    return;
-  }
-
-  res.json(users);
-};
+import userServices from "../services/user.service.ts";
+import { userModel } from "../models/index.ts";
 
 // get user bằng id
 const getUserByIdController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const userId = req.params.userId;
-  const user = await getUserById(userId);
+  const user_id = req.params.user_id;
+  const user = await userServices.getUserById(user_id);
 
   if (!user) {
     res.status(404).json({ message: "Không tìm thấy người dùng" });
@@ -40,84 +18,43 @@ const getUserByIdController = async (
   res.json(user);
 };
 
-// tạo user
-const createUserController = async (
-  req: Request<{}, {}, UserInput>,
-  res: Response
-) => {
-  try {
-    const { studentId, fullName, email, password, phone } = req.body;
-    const role = "STUDENT";
-
-    if (!studentId || !fullName || !email || !password || !phone) {
-      return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
-    }
-
-    await createUser({
-      studentId,
-      fullName,
-      email,
-      password,
-      phone,
-      role,
-    });
-
-    res.status(201).json({
-      message: "Đăng ký thành công",
-    });
-  } catch (err: any) {
-    res.status(400).json({ message: err.message });
-  }
-};
-
 // update user bằng id
 const updateUserByIdController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { fullName, email, password, phone } = req.body;
-  const userId = req.params.userId;
+  const user_id = req.params.user_id;
+  const { password, phone, avatar_url } = req.body;
+
   try {
-    if (!userId || !fullName || !email || !password || !phone) {
-      res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
+    if (!user_id) {
+      res.status(400).json({ message: "Thiếu ID người dùng" });
       return;
     }
-    await updateUserById(
-      {
-        fullName,
-        email,
-        password,
-        phone,
-      },
-      userId
-    );
 
-    res.status(200).json({ message: "Cập nhật người dùng thành công" });
-  } catch (err: any) {
-    res.status(400).json({ message: err.message });
-  }
-};
-
-// xoá user bằng id
-const deleteUserByIdController = async (req: Request, res: Response) => {
-  const userId = req.params.userId;
-  try {
-    if (!userId) {
-      return res.status(400).json({ message: "Người dùng không tồn tại" });
+    // người dùng không gửi bất kỳ trường nào để cập nhật thì thôi
+    if (
+      password === undefined &&
+      phone === undefined &&
+      avatar_url === undefined
+    ) {
+      res.status(400).json({ message: "Không có dữ liệu để cập nhật" });
+      return;
     }
 
-    await deleteUserById(userId);
+    await userServices.updateUserById(user_id, {
+      password,
+      phone,
+      avatar_url,
+    });
 
-    res.status(200).json({ message: "Xoá thành công người dùng" });
+    res
+      .status(200)
+      .json({ message: "Cập nhật thông tin người dùng thành công" });
   } catch (err: any) {
-    res.status(400).json({ message: err.message });
+    console.error("[updateUserByIdController]", err);
+    res.status(500).json({ message: err.message || "Lỗi server" });
   }
 };
 
-export {
-  getAllUserController,
-  getUserByIdController,
-  createUserController,
-  updateUserByIdController,
-  deleteUserByIdController,
-};
+export { getUserByIdController, updateUserByIdController };

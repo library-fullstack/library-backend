@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 import "dotenv/config";
-import db from "../src/config/db.js";
+import db from "../src/config/db.ts";
 
 const createAdmin = async () => {
   const id = uuidv4();
@@ -10,14 +10,25 @@ const createAdmin = async () => {
 
   await db.query(
     `
-    INSERT INTO users (id, studentId, full_name, email, password, role, status)
-    VALUES (?, NULL, ?, ?, ?, 'ADMIN', 'ACTIVE')
-    `,
-    [id, "Nguyễn Văn A", "123456", hash]
+  INSERT INTO users
+    (id, student_id, full_name, email, password, phone, role, status, avatar_url)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `,
+    [
+      id,
+      null,
+      "Trần Kính Hoàng",
+      "hoaug@duck.com",
+      hash,
+      "0869995472",
+      "ADMIN",
+      "ACTIVE",
+      null,
+    ]
   );
 
   console.log("Đã tạo thành công tài khoản Admin:");
-  console.log({ email: "hoaug@xyz.com", password: "123456" });
+  console.log({ email: "hoaug@duck.com", password: "123456" });
   process.exit(0);
 };
 

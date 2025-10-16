@@ -1,106 +1,105 @@
 import connection from "../config/db.ts";
-import { User, UserInput, UserUpdate } from "../models/user.model.ts";
+import { userModel } from "../models/index.ts";
 import { v4 as uuidv4 } from "uuid";
 // mã hoá password
 import { hashPassword } from "../utils/password.ts";
 
-const getAllUser = async (): Promise<User[] | null> => {
-  const [rows] = await connection.query<User[]>("SELECT * FROM users");
-
-  return rows.length ? rows : null;
-};
-
 // get user bằng id
-const getUserById = async (userId: string): Promise<User | null> => {
-  const [rows] = await connection.query<User[]>(
+const getUserById = async (user_id: string): Promise<userModel.User | null> => {
+  const [rows] = await connection.query<userModel.User[]>(
     "SELECT * FROM users WHERE id = ?",
-    [userId]
+    [user_id]
   );
-  return rows.length ? rows[0] : null;
+  return rows[0];
 };
 
 // get user bằng email
-const getUserByEmail = async (email: string): Promise<User | null> => {
-  const [rows] = await connection.query<User[]>(
+const getUserByEmail = async (
+  email: string
+): Promise<userModel.User | null> => {
+  const [rows] = await connection.query<userModel.User[]>(
     `SELECT * FROM users WHERE email = ?`,
     [email]
   );
-  return rows.length ? rows[0] : null;
+  return rows[0];
 };
 
 // get user bằng studentId
-const getUserByStudentId = async (studentId: string): Promise<User | null> => {
-  const [rows] = await connection.query<User[]>(
-    `SELECT * FROM users WHERE studentId = ?`,
-    [studentId]
+const getUserByStudentId = async (
+  student_id: string
+): Promise<userModel.User | null> => {
+  const [rows] = await connection.query<userModel.User[]>(
+    `SELECT * FROM users WHERE student_id = ?`,
+    [student_id]
   );
   return rows.length ? rows[0] : null;
 };
 
 // tạo user mới
-const createUser = async (user: UserInput): Promise<void> => {
-  // check studentId
-  const [existStudentId] = await connection.query<User[]>(
-    "SELECT id FROM users WHERE studentId = ?",
-    [user.studentId]
+const createUser = async (
+  user: userModel.StudentRegisterInput
+): Promise<void> => {
+  // check student_id
+  const [existStudentId] = await connection.query<userModel.User[]>(
+    "SELECT id FROM users WHERE student_id = ?",
+    [user.student_id]
   );
   if (existStudentId.length > 0)
     throw new Error("Mã sinh viên đã được đăng ký");
 
-  // check email
-  const [existEmail] = await connection.query<User[]>(
-    "SELECT id FROM users WHERE email = ?",
-    [user.email]
-  );
-  if (existEmail.length > 0) throw new Error("Email đã được đăng ký");
-
   // tạo id bằng uuid luôn
   const id = uuidv4();
-  let passwordHash: string | null = null;
 
-  if (user.password) {
-    passwordHash = await hashPassword(user.password);
+  if (!user.password) {
+    throw new Error("Thiếu mật khẩu");
   }
+  const passwordHashed = await hashPassword(user.password);
 
   await connection.query(
-    "INSERT INTO users (id, studentId, full_name, email, password, phone, role) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [
-      id,
-      user.studentId,
-      user.fullName,
-      user.email,
-      passwordHash,
-      user.phone || null,
-      user.role || "STUDENT",
-    ]
+    "INSERT INTO users (id, student_id, password, role) VALUES (?, ?, ?, ?)",
+    [id, user.student_id, passwordHashed, user.role]
   );
 };
 
 // update user bằng id
 const updateUserById = async (
-  user: UserUpdate,
-  userId: string
+  user_id: string,
+  user: Pick<userModel.UserUpdate, "password" | "phone" | "avatar_url">
 ): Promise<void> => {
-  const passwordHash = user.password ? await hashPassword(user.password) : null;
+  const fields: string[] = [];
+  const values: any[] = [];
 
-  await connection.query(
-    "UPDATE users SET full_name = ?, email = ?, password = ?, phone = ? WHERE id = ?",
-    [user.fullName, user.email, passwordHash, user.phone, userId]
-  );
+  if (user.password !== undefined) {
+    const hashed = await hashPassword(user.password);
+    fields.push("password = ?");
+    values.push(hashed);
+  }
+
+  if (user.phone !== undefined) {
+    fields.push("phone = ?");
+    values.push(user.phone);
+  }
+
+  if (user.avatar_url !== undefined) {
+    fields.push("avatar_url = ?");
+    values.push(user.avatar_url);
+  }
+
+  // không có field nào cần update thì bỏ qua
+  if (!fields.length) return;
+
+  const sql = `UPDATE users SET ${fields.join(", ")} WHERE id = ?`;
+  values.push(user_id);
+
+  await connection.query(sql, values);
 };
 
-// xoá user bằng id
-const deleteUserById = async (userId: string): Promise<void> => {
-  const sql = "DELETE FROM users WHERE id = ?";
-  await connection.query(sql, [userId]);
-};
-
-export {
-  getAllUser,
+const userServices = {
   createUser,
   getUserById,
-  deleteUserById,
   updateUserById,
   getUserByEmail,
   getUserByStudentId,
 };
+
+export default userServices;

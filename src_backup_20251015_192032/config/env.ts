@@ -18,7 +18,6 @@ type Env = {
   DB_PASSWORD: string;
   DB_DATABASE: string;
   JWT_SECRET: string;
-  PASSWORD_PEPPER: string;
 };
 
 // export các biến môi trường đã kiểm tra
@@ -31,5 +30,4 @@ export const env: Env = {
   DB_PASSWORD: requireEnv("DB_PASSWORD"),
   DB_DATABASE: requireEnv("DB_DATABASE"),
   JWT_SECRET: requireEnv("JWT_SECRET"),
-  PASSWORD_PEPPER: requireEnv("PASSWORD_PEPPER"),
 };
