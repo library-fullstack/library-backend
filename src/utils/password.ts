@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
-import "dotenv/config";
+import { requireEnv } from "../config/env.ts";
 
 export const SALT_ROUNDS = 10;
-const PEPPER = process.env.PASSWORD_PEPPER || "";
+const PEPPER = requireEnv("PASSWORD_PEPPER") || "";
 
 const hashPassword = async (plain: string): Promise<string> => {
   return bcrypt.hash(plain + PEPPER, SALT_ROUNDS);
@@ -16,8 +16,7 @@ const verifyPassword = async (
 };
 
 // check băm hay chưa băm
-const isHashed = (value: string): boolean => {
-  return /^\$2[aby]\$\d{2}\$/.test(value);
-};
+const isHashed = (value: string): boolean =>
+  ["$2a$", "$2b$", "$2y$"].some((prefix) => value.startsWith(prefix));
 
 export { hashPassword, verifyPassword, isHashed };

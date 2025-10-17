@@ -1,6 +1,6 @@
 import express from "express";
 import userRoutes from "./user.routes.ts";
-import bookRoutes from "./book.routes.ts";
+import bookRoutes from "./book/book.routes.ts";
 import authRoute from "./auth.routes.ts";
 import adminRoute from "./admin.routes.ts";
 

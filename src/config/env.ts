@@ -3,7 +3,7 @@ dotenv.config();
 
 // kiểm tra biến môi trường
 
-export function requireEnv(key: string): string {
+function requireEnv(key: string): string {
   const value = process.env[key];
   if (!value) throw new Error(`Thiếu biến môi trường: ${key}`);
   return value;
@@ -22,7 +22,7 @@ type Env = {
 };
 
 // export các biến môi trường đã kiểm tra
-export const env: Env = {
+const env: Env = {
   NODE_ENV: requireEnv("NODE_ENV") as Env["NODE_ENV"],
   SERVER_PORT: Number(requireEnv("SERVER_PORT")) || 3000,
   DB_HOST: requireEnv("DB_HOST"),
@@ -33,3 +33,5 @@ export const env: Env = {
   JWT_SECRET: requireEnv("JWT_SECRET"),
   PASSWORD_PEPPER: requireEnv("PASSWORD_PEPPER"),
 };
+
+export { requireEnv, env };

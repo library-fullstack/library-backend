@@ -48,3 +48,33 @@ export const loginController = async (req: Request, res: Response) => {
     });
   }
 };
+
+// quên mật khẩu
+export const forgotPasswordController = async (req: Request, res: Response) => {
+  try {
+    const { identifier, channel } = req.body;
+    const result = await authService.forgotPassword(identifier, channel);
+    res.status(200).json(result);
+  } catch (err: any) {
+    res
+      .status(400)
+      .json({ message: err.message || "Không thể gửi mã khôi phục." });
+  }
+};
+
+// đổi mật khẩu
+export const resetPasswordController = async (req: Request, res: Response) => {
+  try {
+    const { identifier, code, new_password } = req.body;
+    const result = await authService.resetPassword(
+      identifier,
+      code,
+      new_password
+    );
+    res.status(200).json(result);
+  } catch (err: any) {
+    res
+      .status(400)
+      .json({ message: err.message || "Không thể đặt lại mật khẩu." });
+  }
+};

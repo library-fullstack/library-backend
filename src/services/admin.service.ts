@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 // mã hoá password
 import { hashPassword } from "../utils/password.ts";
 
-// get all user
+// lấy hết thông tin cả tất cả người dùng
 const adminGetAllUser = async (): Promise<userModel.User[] | null> => {
   const [rows] = await connection.query<userModel.User[]>(
     "SELECT * FROM users"
@@ -13,6 +13,7 @@ const adminGetAllUser = async (): Promise<userModel.User[] | null> => {
   return rows;
 };
 
+// lấy thông tin của người dùng theo id
 const adminGetUserById = async (
   user_id: string
 ): Promise<userModel.User | null> => {
@@ -23,27 +24,37 @@ const adminGetUserById = async (
   return rows[0];
 };
 
+// tạo người dùng mới
 const adminCreateUser = async (
   user: userModel.AdminCreateUserInput
 ): Promise<void> => {
+  // nếu thiếu thông tin cần thiết thì không cho tạo
+  // hiện tại đang bị xung đột với bảng students
+  // đcm thằng nào nghĩ ra cái bảng student này vậy clm
   if (!user.full_name || !user.password || !user.role) {
     throw new Error(
       "Thiếu thông tin bắt buộc (full_name, email, password, role)"
     );
   }
 
+  // check xem người dùng này có tồn tại hay chưa
   const [exist] = await connection.query<userModel.User[]>(
     "SELECT id FROM users WHERE email = ? OR student_id = ?",
     [user.email, user.student_id || null]
   );
+
+  //nếu tồn tại thì lượn
   if (exist.length > 0) {
     throw new Error("Email hoặc mã sinh viên đã tồn tại trong hệ thống");
   }
 
+  // mã hoá mật khẩu
   const passwordHashed = await hashPassword(user.password);
 
+  // tạo id UUID
   const id = uuidv4();
 
+  // chạy truy vấn thêm người dùng này vào cơ sở dữ liệu
   await connection.query(
     `
       INSERT INTO users (
