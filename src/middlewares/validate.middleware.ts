@@ -2,21 +2,28 @@ import { Request, Response, NextFunction } from "express";
 import Joi from "joi";
 
 const validate =
-  (schemaName: "createUser" | "updateBook" | "login") =>
+  (
+    schemaName:
+      | "createUser"
+      | "updateBook"
+      | "login"
+      | "forgotPassword"
+      | "resetPassword"
+  ) =>
   (req: Request, res: Response, next: NextFunction) => {
     let schema: Joi.ObjectSchema | null = null;
 
     switch (schemaName) {
       case "createUser":
         schema = Joi.object({
-          student_id: Joi.when("role", {
-            is: "STUDENT",
-            then: Joi.string().required().messages({
-              "any.required": `"student_id" là bắt buộc với sinh viên`,
-            }),
-            otherwise: Joi.string().allow(null, "").optional(),
+          student_id: Joi.string().required().messages({
+            "any.required": `"student_id" là bắt buộc khi đăng ký`,
+            "string.empty": `"student_id" không được để trống`,
           }),
-          password: Joi.string().min(6).required(),
+          password: Joi.string().min(6).required().messages({
+            "any.required": `"password" là bắt buộc`,
+            "string.min": `"password" phải có ít nhất 6 ký tự`,
+          }),
           full_name: Joi.string().max(50).optional(),
           email: Joi.string().email().optional(),
           phone: Joi.string()
@@ -27,9 +34,11 @@ const validate =
             }),
           role: Joi.string()
             .valid("STUDENT", "LIBRARIAN", "MODERATOR", "ADMIN")
+            .optional()
             .default("STUDENT"),
           status: Joi.string()
             .valid("ACTIVE", "INACTIVE", "BANNED")
+            .optional()
             .default("ACTIVE"),
         });
         break;
@@ -41,6 +50,33 @@ const validate =
         });
         break;
 
+      case "forgotPassword":
+        schema = Joi.object({
+          email: Joi.string().email().required().messages({
+            "any.required": `"email" là bắt buộc`,
+            "string.email": `"email" không hợp lệ`,
+            "string.empty": `"email" không được để trống`,
+          }),
+        });
+        break;
+
+      case "resetPassword":
+        schema = Joi.object({
+          token: Joi.string().required().messages({
+            "any.required": `"token" là bắt buộc`,
+            "string.empty": `"token" không được để trống`,
+          }),
+          new_password: Joi.string()
+            .min(8)
+            .pattern(/^(?=.*[A-Za-z])(?=.*\d).+$/)
+            .required()
+            .messages({
+              "any.required": `"new_password" là bắt buộc`,
+              "string.min": `"new_password" phải có ít nhất 8 ký tự`,
+              "string.pattern.base": `"new_password" phải chứa ít nhất 1 chữ và 1 số`,
+            }),
+        });
+        break;
       case "updateBook":
         schema = Joi.object({
           title: Joi.string().optional(),

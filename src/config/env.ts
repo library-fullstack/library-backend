@@ -19,6 +19,7 @@ type Env = {
   DB_DATABASE: string;
   JWT_SECRET: string;
   PASSWORD_PEPPER: string;
+  FRONTEND_URL: string;
 };
 
 // export các biến môi trường đã kiểm tra
@@ -32,6 +33,7 @@ const env: Env = {
   DB_DATABASE: requireEnv("DB_DATABASE"),
   JWT_SECRET: requireEnv("JWT_SECRET"),
   PASSWORD_PEPPER: requireEnv("PASSWORD_PEPPER"),
+  FRONTEND_URL: requireEnv("FRONTEND_URL"),
 };
 
 export { requireEnv, env };

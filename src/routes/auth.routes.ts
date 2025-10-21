@@ -9,10 +9,24 @@ import {
 
 const router = express.Router();
 
+// đăng ký
 router.post("/register", validate("createUser"), registerController);
+
+// đăng nhập
 router.post("/login", validate("login"), loginController);
 
-router.post("/forgot-password", forgotPasswordController);
-router.post("/reset-password", resetPasswordController);
+// quên mật khẩu
+router.post(
+  "/forgot-password",
+  validate("forgotPassword"),
+  forgotPasswordController
+);
+
+// đổi mật khẩu
+router.post(
+  "/reset-password",
+  validate("resetPassword"),
+  resetPasswordController
+);
 
 export default router;

@@ -84,28 +84,35 @@ const adminCreateUser = async (
   );
 };
 
+// thay đổi thông tin người dùng
 const adminUpdateUserById = async (
   user_id: string,
   user: userModel.AdminUserUpdate
 ): Promise<void> => {
+  // tạo field để chứa câu lệnh truy vấn
   const fields: string[] = [];
+  // values để chứa giá trị truy vấn
   const values: any[] = [];
 
+  // nếu có thay đổi thì mới đẩy vào field để truy vấ sau
   if (user.full_name !== undefined) {
     fields.push("full_name = ?");
     values.push(user.full_name);
   }
 
-  // cái này có cần thiết không nhỉ ?
+  // đổi email thì phải kiểm tra email đó có tồn tại trong hệ thống hay không
   if (user.email !== undefined) {
-    const [emailCheck] = await connection.query(
+    // tìm email mới xem có trả về gì không
+    const [emailCheck] = await connection.query<userModel.User[]>(
       "SELECT id FROM users WHERE email = ? AND id != ?",
       [user.email, user_id]
     );
-    if ((emailCheck as any[]).length > 0) {
+    // nếu có trùng thì lướt
+    if (emailCheck.length > 0) {
       throw new Error("Email này đã tồn tại trong hệ thống");
     }
 
+    // không trùng thì thêm vào field để truy vấn
     fields.push("email = ?");
     values.push(user.email);
   }
@@ -139,24 +146,31 @@ const adminUpdateUserById = async (
   // không có fields nào thì khỏi query
   if (!fields.length) return;
 
+  // cuối cùng truy vấn fields với value mà người dùng cần đã được push vào trong field và value
   const sql = `UPDATE users SET ${fields.join(", ")} WHERE id = ?`;
   values.push(user_id);
 
+  // chạy query
   await connection.query(sql, values);
 };
 
 // xoá user bằng id
 const adminDeleteUserById = async (user_id: string): Promise<void> => {
-  const [rows] = await connection.query("SELECT id FROM users WHERE id = ?", [
-    user_id,
-  ]);
-  if (!(rows as any[]).length) {
+  // kiểm tra xem có tồn tại người dùng đó không
+  const [rows] = await connection.query<userModel.User[]>(
+    "SELECT id FROM users WHERE id = ?",
+    [user_id]
+  );
+  // nếu không có thì báo không có người dùng cần xoá
+  if (!rows.length) {
     throw new Error("Không tìm thấy người dùng cần xoá");
   }
 
+  // nếu có thì truy vấn xoá người dùng
   await connection.query("DELETE FROM users WHERE id = ?", [user_id]);
 };
 
+// xuất tất cả
 const adminServices = {
   adminGetAllUser,
   adminGetUserById,

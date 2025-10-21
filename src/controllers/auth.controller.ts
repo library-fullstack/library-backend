@@ -49,32 +49,44 @@ export const loginController = async (req: Request, res: Response) => {
   }
 };
 
-// quên mật khẩu
+// quên mật khẩu controller
 export const forgotPasswordController = async (req: Request, res: Response) => {
   try {
-    const { identifier, channel } = req.body;
-    const result = await authService.forgotPassword(identifier, channel);
+    // lấy email
+    const { email } = req.body;
+
+    // lấy kết quả khi truy vấn quên mật khẩu
+    const result = await authService.forgotPassword(email);
+    // trả về status + message api
     res.status(200).json(result);
   } catch (err: any) {
+    console.error("[ForgotPassword]", err);
     res
       .status(400)
       .json({ message: err.message || "Không thể gửi mã khôi phục." });
   }
 };
 
-// đổi mật khẩu
+// đổi mật khẩu controller
 export const resetPasswordController = async (req: Request, res: Response) => {
   try {
-    const { identifier, code, new_password } = req.body;
-    const result = await authService.resetPassword(
-      identifier,
-      code,
-      new_password
-    );
+    // lấy token và mật khẩu mới
+    const { token, new_password } = req.body;
+
+    // thiếu 1 trong 2 thì lượn
+    if (!token || !new_password) {
+      return res.status(400).json({
+        message: "Thiếu token hoặc mật khẩu mới.",
+      });
+    }
+    // truy vấn đổi mật khẩu và lấy về message báo thành công
+    const result = await authService.resetPassword(token, new_password);
+    // trả về status + message api
     res.status(200).json(result);
   } catch (err: any) {
-    res
-      .status(400)
-      .json({ message: err.message || "Không thể đặt lại mật khẩu." });
+    console.error("[AuthResetPassword]", err);
+    res.status(400).json({
+      message: err.message || "Không thể đặt lại mật khẩu.",
+    });
   }
 };

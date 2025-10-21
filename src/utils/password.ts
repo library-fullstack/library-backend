@@ -4,10 +4,12 @@ import { requireEnv } from "../config/env.ts";
 export const SALT_ROUNDS = 10;
 const PEPPER = requireEnv("PASSWORD_PEPPER") || "";
 
+// hàm mã hoá password dùng bcrypt + salt 10 + pepper
 const hashPassword = async (plain: string): Promise<string> => {
   return bcrypt.hash(plain + PEPPER, SALT_ROUNDS);
 };
 
+// hàm kiểm tra mật khẩu
 const verifyPassword = async (
   plain: string,
   hash: string
