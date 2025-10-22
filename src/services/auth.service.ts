@@ -2,8 +2,7 @@ import { userModel } from "../models/index.ts";
 import userServices from "./user.service.ts";
 import { signToken } from "../utils/jwt.ts";
 import { verifyPassword, hashPassword } from "../utils/password.ts";
-import { sendMail } from "../utils/mailer.ts";
-import { sendSMS } from "../utils/sms.ts";
+import { sendPasswordResetEmail } from "../utils/emailTemplates.ts";
 import connection from "../config/db.ts";
 import { requireEnv } from "../config/env.ts";
 import { v4 as uuidv4 } from "uuid";
@@ -237,35 +236,8 @@ export const forgotPassword = async (email: string) => {
   const frontendUrl = requireEnv("FRONTEND_URL") || "http://localhost:5173";
   const resetLink = `${frontendUrl}/auth/reset-password?token=${resetToken}`;
 
-  const subject = "Đặt lại mật khẩu - Thư viện HBH";
-
-  const html = `
-  <div style="font-family: 'Segoe UI', sans-serif; background: #f8fafc; padding: 32px;">
-    <div style="max-width: 480px; margin: auto; background: #ffffff; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); padding: 32px;">
-      <h2 style="color: #4F46E5; text-align: center;">Thư viện HBH</h2>
-      <p style="font-size: 16px; color: #334155;">Xin chào <b>${user.full_name || "bạn"}</b>,</p>
-      <p style="color: #475569; line-height: 1.6;">
-        Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản của mình.<br/>
-        Nhấn vào nút bên dưới để đặt lại mật khẩu mới:
-      </p>
-
-      <a href="${resetLink}" 
-         style="display: inline-block; margin: 20px auto; background: #4F46E5; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-        Đặt lại mật khẩu
-      </a>
-
-      <p style="font-size: 14px; color: #64748B;">
-        Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email này.<br/>
-        Liên kết sẽ hết hạn sau <b>15 phút</b>.
-      </p>
-    </div>
-    <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 16px;">
-      © 2025 HBH Library System. All rights reserved.
-    </p>
-  </div>
-  `;
-
-  await sendMail(user.email, subject, html);
+  // Sử dụng email template với category
+  await sendPasswordResetEmail(user.email, user.full_name || "bạn", resetLink);
 
   return {
     message: "Liên kết đặt lại mật khẩu đã được gửi tới email của bạn.",
