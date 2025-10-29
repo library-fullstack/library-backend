@@ -1,2 +1,10 @@
 export * as userModel from "./user.model.ts";
 export * as bookModel from "./book.model.ts";
+export * as bookAuthorModel from "./book/bookAuthor.model.ts";
+export * as bookCategoryModel from "./book/bookCategory.model.ts";
+export * as bookImageModel from "./book/bookImage.model.ts";
+export * as bookPublisherModel from "./book/bookPublisher.model.ts";
+export * as bookTagModel from "./book/bookTag.model.ts";
+// export * as bookCopyModel from "./bookCopy.model.ts";
+export * as borrowModel from "./borrow.model.ts";
+export * as borrowDetailModel from "./borrowDetail.model.ts";

@@ -6,6 +6,9 @@ import uploadRouter from "./upload.route.ts";
 
 const router = express.Router();
 
+// Public: lấy tổng số sách active (không cần auth) - đặt trước các route khác để tránh conflict với /:bookId
+router.get("/count", bookController.getPublicBookCountController);
+
 router.get("/", bookController.getAllBooksController);
 router.get("/:bookId", bookController.getBookByIdController);
 

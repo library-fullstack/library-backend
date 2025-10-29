@@ -68,11 +68,13 @@ const register = async (
 const login = async (
   identifier: string, // ủa bên front-end để là student_id thì nếu admin đăng nhập thì đăng nhập kiểu gì nhỉ ?
   password: string
-): Promise<{ user: any; token: string }> => {
-  // query email / studentId để check xem tài khoản có tồn tại hay không
-  const user =
-    (await userServices.getUserByEmail(identifier)) ||
-    (await userServices.getUserByStudentId(identifier));
+): Promise<{ user: any; accessToken: string }> => {
+  // query email OR student_id (một lần, có index) để kiểm tra tài khoản
+  const [userRows] = await connection.query<any[]>(
+    `SELECT * FROM users WHERE email = ? OR student_id = ? LIMIT 1`,
+    [identifier, identifier]
+  );
+  const user = userRows[0];
 
   // không tồn tại thì lượn
   if (!user) {
@@ -98,7 +100,11 @@ const login = async (
   }
 
   // lấy token jwt để xác minh đăng nhập
-  const token = signToken({ user_id: user.id, role: user.role });
+  const token = signToken({
+    id: user.id,
+    role: user.role,
+    email: user.email, // thêm luôn email vào token để dễ check
+  });
 
   //  lấy thông tin sinh viên đó dựa vào bảng students (cơ sở dữ liệu của trường)
   //  tuy nhiên vấn đề bây giờ là cái bảng student này nếu mà lấy dữ liệu ra thì rất phiền
@@ -133,7 +139,7 @@ const login = async (
   }
 
   // cuối cùng trả về sinh viên đó kèm theo token
-  return { user: fullUser, token };
+  return { user: fullUser, accessToken: token };
 };
 
 // tạo cái mã OTP 6 số
@@ -233,14 +239,24 @@ export const forgotPassword = async (email: string) => {
   );
 
   // link reset password
-  const frontendUrl = requireEnv("FRONTEND_URL") || "http://localhost:5173";
+  const frontendUrlsRaw =
+    process.env.FRONTEND_URLS ||
+    process.env.FRONTEND_URL ||
+    "http://localhost:5173";
+  const frontendUrls = frontendUrlsRaw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const frontendUrl =
+    frontendUrls.find((url) => url.includes("libsys.me")) || frontendUrls[0];
   const resetLink = `${frontendUrl}/auth/reset-password?token=${resetToken}`;
 
-  // Sử dụng email template với category
+  // email template với category
   await sendPasswordResetEmail(user.email, user.full_name || "bạn", resetLink);
 
   return {
-    message: "Liên kết đặt lại mật khẩu đã được gửi tới email của bạn.",
+    message:
+      "Liên kết đặt lại mật khẩu đã được gửi tới email của bạn. Nếu không thấy thư, vui lòng kiểm tra phần thư rác.",
   };
 };
 

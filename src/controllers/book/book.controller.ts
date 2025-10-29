@@ -8,21 +8,33 @@ import {
   updateBookStatus,
   countBookStats,
   isBookAvailable,
+  countPublicBooks,
 } from "../../services/book/book.service.ts";
 import { BookInput, BookInputFull } from "../../models/book.model.ts";
+import { isValidBookSort } from "../../types/common.ts";
 
-// Lấy danh sách sách
+// lấy danh sách sách
 const getAllBooksController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
+    // xác nhận và ép kiểu tham số sort_by
+    const sortBy = req.query.sort_by as string;
+    if (sortBy && !isValidBookSort(sortBy)) {
+      res.status(400).json({
+        message: `Invalid sort_by value. Allowed: newest, oldest, title_asc, title_desc, popular`,
+      });
+      return;
+    }
+
     const filters = {
       keyword: req.query.keyword as string,
       categoryId: req.query.categoryId
         ? Number(req.query.categoryId)
         : undefined,
       status: req.query.status as string,
+      sortBy: isValidBookSort(sortBy) ? sortBy : undefined,
       limit: req.query.limit ? Number(req.query.limit) : undefined,
       offset: req.query.offset ? Number(req.query.offset) : undefined,
     };
@@ -36,7 +48,7 @@ const getAllBooksController = async (
   }
 };
 
-// Lấy chi tiết 1 sách theo ID
+// lấy chi  tiết sách theo id
 const getBookByIdController = async (
   req: Request,
   res: Response
@@ -62,7 +74,7 @@ const getBookByIdController = async (
   }
 };
 
-// Thêm mới sách
+// thêm sách mới
 const createBookController = async (
   req: Request<{}, {}, BookInputFull>,
   res: Response
@@ -94,7 +106,7 @@ const createBookController = async (
   }
 };
 
-// Cập nhật sách theo ID
+// cập nhật sách theo id
 const updateBookByIdController = async (
   req: Request,
   res: Response
@@ -119,7 +131,7 @@ const updateBookByIdController = async (
   }
 };
 
-// Xoá sách theo ID
+// xoá sách theo id
 const deleteBookByIdController = async (
   req: Request,
   res: Response
@@ -140,7 +152,7 @@ const deleteBookByIdController = async (
   }
 };
 
-// Cập nhật trạng thái sách (ADMIN hoặc LIBRARIAN)
+// cập nhật trạng thái sách (ADMIN hoặc LIBRARIAN)
 const updateBookStatusController = async (
   req: Request,
   res: Response
@@ -161,7 +173,7 @@ const updateBookStatusController = async (
   }
 };
 
-// Thống kê sách (ADMIN)
+// thống kê sách (ADMIN)
 const getBookStatsController = async (
   req: Request,
   res: Response
@@ -174,7 +186,7 @@ const getBookStatsController = async (
   }
 };
 
-// Kiểm tra sách có còn bản khả dụng không (cho borrow)
+// kiểm tra sách có còn bản khả dụng không (cho borrow)
 const checkBookAvailableController = async (
   req: Request,
   res: Response
@@ -188,6 +200,19 @@ const checkBookAvailableController = async (
   }
 };
 
+// lấy tổng số sách ACTIVE (không cần auth - cho mọi người)
+const getPublicBookCountController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const count = await countPublicBooks();
+    res.status(200).json(count);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 export {
   getAllBooksController,
   getBookByIdController,
@@ -197,4 +222,5 @@ export {
   updateBookStatusController,
   getBookStatsController,
   checkBookAvailableController,
+  getPublicBookCountController,
 };

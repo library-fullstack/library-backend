@@ -60,3 +60,5 @@ temp/
 docker-compose.yml
 Dockerfile
 createAdmin.ts
+origin-private.pem
+origin.pem

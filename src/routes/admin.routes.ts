@@ -47,4 +47,12 @@ router.delete(
   adminController.adminDeleteUserByIdController
 );
 
+// đổi avatar user
+// router.patch(
+//   "/:user_id/avatar",
+//   authMiddleware,
+//   uploadMiddleware.single("avatar"),
+//   userController.updateUserAvatarByIdController
+// );
+
 export default router;

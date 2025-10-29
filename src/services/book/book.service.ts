@@ -1,14 +1,41 @@
 import connection from "../../config/db.ts";
 import { Book, BookInput, BookInputFull } from "../../models/book.model.ts";
+import { BookFilters, isValidBookSort } from "../../types/common.ts";
 import { RowDataPacket } from "mysql2";
 
-const getAllBooks = async (filters?: {
-  keyword?: string;
-  categoryId?: number;
-  status?: string;
-  limit?: number;
-  offset?: number;
-}): Promise<Book[]> => {
+const getAllBooks = async (filters?: BookFilters): Promise<Book[]> => {
+  let orderByClause =
+    "COALESCE(b.publication_year, 9999) DESC, b.created_at DESC";
+
+  switch (filters?.sortBy) {
+    case "newest":
+      orderByClause =
+        "COALESCE(b.publication_year, 9999) DESC, b.created_at DESC";
+      break;
+    case "oldest":
+      orderByClause = "COALESCE(b.publication_year, 0) ASC, b.created_at ASC";
+      break;
+    case "newest_added":
+      orderByClause = "b.created_at DESC, b.id DESC";
+      break;
+    case "oldest_added":
+      orderByClause = "b.created_at ASC, b.id ASC";
+      break;
+    case "title_asc":
+      orderByClause = "b.title COLLATE utf8mb4_unicode_ci ASC";
+      break;
+    case "title_desc":
+      orderByClause = "b.title COLLATE utf8mb4_unicode_ci DESC";
+      break;
+    case "popular":
+      orderByClause =
+        "copies_count DESC, available_count DESC, COALESCE(b.publication_year, 9999) DESC";
+      break;
+    default:
+      orderByClause =
+        "COALESCE(b.publication_year, 9999) DESC, b.created_at DESC";
+  }
+
   let sql = `
     SELECT 
       b.*,
@@ -16,14 +43,13 @@ const getAllBooks = async (filters?: {
       p.name AS publisher_name,
       COUNT(DISTINCT ba.author_id) AS author_count,
       GROUP_CONCAT(DISTINCT a.name ORDER BY ba.ord SEPARATOR ', ') AS author_names,
-      COUNT(DISTINCT bc.id) AS copies_count,
-      SUM(bc.status = 'AVAILABLE') AS available_count
+      (SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = b.id) AS copies_count,
+      (SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = b.id AND bc.status = 'AVAILABLE') AS available_count
     FROM books b
     LEFT JOIN book_categories c ON b.category_id = c.id
     LEFT JOIN publishers p ON b.publisher_id = p.id
     LEFT JOIN book_authors ba ON ba.book_id = b.id
     LEFT JOIN authors a ON a.id = ba.author_id
-    LEFT JOIN book_copies bc ON bc.book_id = b.id
     WHERE 1=1
   `;
   const params: any[] = [];
@@ -49,7 +75,7 @@ const getAllBooks = async (filters?: {
 
   sql += `
     GROUP BY b.id
-    ORDER BY b.updated_at DESC
+    ORDER BY ${orderByClause}
   `;
 
   const limit = filters?.limit ?? 20;
@@ -200,6 +226,16 @@ const isBookAvailable = async (bookId: number): Promise<boolean> => {
   return rows[0].count > 0;
 };
 
+// đếm số sách có status là active
+const countPublicBooks = async (): Promise<{ total: number }> => {
+  const [rows] = await connection.query<any[]>(`
+    SELECT COUNT(*) AS total
+    FROM books
+    WHERE status = 'ACTIVE';
+  `);
+  return { total: rows[0].total };
+};
+
 export {
   getAllBooks,
   getBookById,
@@ -209,4 +245,5 @@ export {
   updateBookStatus,
   countBookStats,
   isBookAvailable,
+  countPublicBooks,
 };

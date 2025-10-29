@@ -1,9 +1,18 @@
 import express from "express";
 import { authMiddleware } from "../middlewares/auth.middleware.ts";
 import { authorizeOrOwner } from "../middlewares/authorize.middleware.ts";
+import { uploadMiddleware } from "../middlewares/upload.middleware.ts";
 import * as userController from "../controllers/user.controller.ts";
 
 const router = express.Router();
+
+// đổi avatar
+router.patch(
+  "/profile/avatar",
+  authMiddleware,
+  uploadMiddleware.single("avatar"),
+  userController.updateCurrentUserAvatarController
+);
 
 // tự xem
 router.get(

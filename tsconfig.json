@@ -13,5 +13,5 @@
     "sourceMap": true,
     "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src", "seed_database.mjs"]
 }

@@ -18,7 +18,11 @@ export const authMiddleware = (
   const token = header.split(" ")[1];
 
   try {
-    const decoded = jwtLib.verify(token, env.JWT_SECRET);
+    const decoded = jwtLib.verify(token, env.JWT_SECRET) as {
+      id: string;
+      role: string;
+      email: string;
+    };
 
     (req as any).user = decoded;
 

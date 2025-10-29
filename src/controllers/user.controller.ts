@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import userServices from "../services/user.service.ts";
+import { uploadToCloudinary } from "../utils/cloudinary.ts";
 import { userModel } from "../models/index.ts";
 
 // get user bằng id
@@ -57,4 +58,96 @@ const updateUserByIdController = async (
   }
 };
 
-export { getUserByIdController, updateUserByIdController };
+const updateUserAvatarByIdController = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.user_id;
+    if (!userId) {
+      res.status(401).json({ message: "Không xác thực được người dùng" });
+      return;
+    }
+
+    const file = req.file;
+    if (!file) {
+      res.status(400).json({ message: "Thiếu file ảnh" });
+      return;
+    }
+
+    const uploaded = await uploadToCloudinary(file.path, "avatars");
+
+    await userServices.updateUserById(userId, {
+      avatar_url: uploaded.secure_url,
+    });
+
+    res.status(200).json({
+      message: "Cập nhật ảnh đại diện thành công",
+      avatar_url: uploaded.secure_url,
+    });
+  } catch (err: any) {
+    console.error("[updateUserAvatarByIdController]", err);
+    res.status(500).json({
+      message: err.message || "Lỗi khi cập nhật ảnh đại diện",
+    });
+  }
+};
+
+const updateCurrentUserAvatarController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      console.error("[Avatar Upload] No user ID in request");
+      return res
+        .status(401)
+        .json({ message: "Không xác thực được người dùng" });
+    }
+
+    const file = req.file;
+    if (!file) {
+      console.error("[Avatar Upload] No file in request");
+      return res.status(400).json({ message: "Thiếu file ảnh" });
+    }
+
+    console.log("[Avatar Upload] Starting upload for user:", userId);
+    console.log("[Avatar Upload] File info:", {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      path: file.path,
+    });
+
+    const uploaded = await uploadToCloudinary(file.path, "avatars");
+
+    console.log("[Avatar Upload] Cloudinary upload successful:", {
+      secure_url: uploaded.secure_url,
+      public_id: uploaded.public_id,
+    });
+
+    await userServices.updateUserById(userId, {
+      avatar_url: uploaded.secure_url,
+    });
+
+    console.log("[Avatar Upload] Database updated successfully");
+
+    return res.status(200).json({
+      message: "Cập nhật ảnh đại diện thành công",
+      avatar_url: uploaded.secure_url,
+    });
+  } catch (err: any) {
+    console.error("[updateCurrentUserAvatarController] Error:", {
+      message: err.message,
+      stack: err.stack,
+    });
+    res.status(500).json({
+      message: err.message || "Lỗi khi cập nhật ảnh đại diện",
+    });
+  }
+};
+
+export {
+  getUserByIdController,
+  updateUserByIdController,
+  updateUserAvatarByIdController,
+  updateCurrentUserAvatarController,
+};
