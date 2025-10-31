@@ -6,6 +6,7 @@ import { sendPasswordResetEmail } from "../utils/emailTemplates.ts";
 import connection from "../config/db.ts";
 import { requireEnv } from "../config/env.ts";
 import { v4 as uuidv4 } from "uuid";
+import { sendMail } from "../utils/mailer.ts";
 
 // đăng ký
 const register = async (
@@ -260,55 +261,6 @@ export const forgotPassword = async (email: string) => {
   };
 };
 
-// thay đổi mật khẩu
-// const resetPassword = async (
-//   identifier: string,
-//   code: string,
-//   newPassword: string
-// ) => {
-//   // kiểm tra xem tài khoản có tồn tại hay không để đổi mật khẩu
-//   const [users] = await connection.query<userModel.User[]>(
-//     "SELECT id FROM users WHERE email = ? OR student_id = ?",
-//     [identifier, identifier]
-//   );
-//   // không tồn tại thì lướt
-//   const user = users[0];
-//   if (!user) throw new Error("Tài khoản không tồn tại.");
-
-//   // check xem mã OTP người dùng nhập và thời gian hết hạn. nếu ok thì đổi mật khẩu
-//   const [rows] = await connection.query<userModel.User[]>(
-//     `
-//     SELECT * FROM user_verifications
-//     WHERE user_id = ? AND vtype = 'PASSWORD_RESET' AND code = ?
-//       AND consumed_at IS NULL AND expires_at > NOW()
-//     ORDER BY created_at DESC LIMIT 1
-//     `,
-//     [user.id, code]
-//   );
-
-//   // nếu không thì lướt
-//   const verify = rows[0];
-//   if (!verify) throw new Error("Mã xác minh không hợp lệ hoặc đã hết hạn.");
-
-//   // mã hoá mật khẩu
-//   const hashed = await hashPassword(newPassword);
-
-//   // đổi mật khẩu
-//   await connection.query("UPDATE users SET password = ? WHERE id = ?", [
-//     hashed,
-//     user.id,
-//   ]);
-
-//   // lưu thời điểm đổi mật khẩu
-//   await connection.query(
-//     "UPDATE user_verifications SET consumed_at = NOW() WHERE id = ?",
-//     [verify.id]
-//   );
-
-//   // trả về message API
-//   return { message: "Đặt lại mật khẩu thành công." };
-// };
-
 // đổi mật khẩu
 const resetPassword = async (token: string, newPassword: string) => {
   const jwt = await import("jsonwebtoken");
@@ -362,5 +314,57 @@ const resetPassword = async (token: string, newPassword: string) => {
   return { message: "Đặt lại mật khẩu thành công." };
 };
 
+const sendOtp = async (
+  userId: string,
+  vtype: "CHANGE_PASSWORD" | "PASSWORD_RESET" = "CHANGE_PASSWORD"
+) => {
+  const [users] = await connection.query<userModel.User[]>(
+    "SELECT id, full_name, email FROM users WHERE id = ? LIMIT 1",
+    [userId]
+  );
+  const user = users[0];
+  if (!user) throw new Error("Không tìm thấy người dùng.");
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await connection.query(
+    `INSERT INTO user_verifications (id, user_id, vtype, channel, code, expires_at)
+     VALUES (?, ?, ?, 'EMAIL', ?, ?)`,
+    [uuidv4(), user.id, vtype, code, expiresAt]
+  );
+
+  const subject = "Mã xác minh thay đổi mật khẩu - UNETI Library";
+  const html = `
+  <div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color:#f8fafc; padding:32px;">
+    <div style="max-width:520px; margin:auto; background-color:#ffffff; border-radius:16px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.08); padding:32px 40px;">
+      <h2 style="color:#4F46E5; text-align:center; font-size:22px; margin-bottom:24px;">
+        Xác minh thay đổi mật khẩu
+      </h2>
+      <p style="font-size:15px; color:#334155; margin:0 0 8px;">Xin chào <b>${user.full_name}</b>,</p>
+      <p style="font-size:15px; color:#334155; margin:0 0 12px;">Mã OTP của bạn là:</p>
+      <div style="text-align:center; font-size:36px; font-weight:700; 
+        letter-spacing:6px; color:#4F46E5; margin:16px 0;">${code}</div>
+      <p style="font-size:14px; color:#64748B; line-height:1.6;">
+        Mã có hiệu lực trong <b>10 phút</b>. Nếu không phải bạn yêu cầu, hãy bỏ qua email này.
+      </p>
+    </div>
+    <p style="text-align:center; font-size:12px; color:#94a3b8; margin-top:20px;">
+      © 2025 HBH Library System
+    </p>
+  </div>
+`;
+
+  await sendMail(user.email, subject, html, "change-password");
+  return { message: "Mã xác minh đã được gửi tới email của bạn." };
+};
+
 // xuất các hàm
-export const authService = { register, login, forgotPassword, resetPassword };
+export const authService = {
+  register,
+  login,
+  forgotPassword,
+  resetPassword,
+  sendOtp,
+};

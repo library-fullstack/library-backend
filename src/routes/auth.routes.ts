@@ -5,7 +5,10 @@ import {
   registerController,
   forgotPasswordController,
   resetPasswordController,
+  sendOtpController,
 } from "../controllers/auth.controller.ts";
+import { authMiddleware } from "../middlewares/auth.middleware.ts";
+import { verifyChangePasswordController } from "../controllers/auth.controller.ts";
 
 const router = express.Router();
 
@@ -28,5 +31,7 @@ router.post(
   validate("resetPassword"),
   resetPasswordController
 );
+
+router.post("/send-otp", authMiddleware, sendOtpController);
 
 export default router;

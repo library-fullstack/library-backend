@@ -2,15 +2,32 @@ import connection from "../config/db.ts";
 import { userModel } from "../models/index.ts";
 import { v4 as uuidv4 } from "uuid";
 // mã hoá password
-import { hashPassword } from "../utils/password.ts";
+import { verifyPassword, hashPassword } from "../utils/password.ts";
 
 // get user bằng id
-const getUserById = async (user_id: string): Promise<userModel.User | null> => {
-  const [rows] = await connection.query<userModel.User[]>(
-    "SELECT * FROM users WHERE id = ?",
+const getUserById = async (user_id: string) => {
+  const [rows] = await connection.query(
+    `
+    SELECT 
+      u.id,
+      u.student_id,
+      u.full_name,
+      u.email,
+      u.role,
+      u.phone,
+      u.avatar_url,
+      u.created_at,
+      s.class_name,
+      s.faculty,
+      s.major,
+      s.admission_year
+    FROM users u
+    LEFT JOIN students s ON s.student_id = u.student_id
+    WHERE u.id = ?
+    `,
     [user_id]
   );
-  return rows[0];
+  return (rows as any)[0] || null;
 };
 
 // get user bằng email
@@ -104,6 +121,70 @@ const updateUserById = async (
   // chạy query
   await connection.query(sql, values);
 };
+const checkCurrentPassword = async (userId: string, password: string) => {
+  if (!userId || !password) throw new Error("Thiếu thông tin xác minh.");
+
+  const [rows] = await connection.query(
+    "SELECT password FROM users WHERE id = ?",
+    [userId]
+  );
+  const user = (rows as any)[0];
+  if (!user) throw new Error("Không tìm thấy người dùng.");
+
+  const valid = await verifyPassword(password, user.password);
+  if (!valid) throw new Error("Mật khẩu hiện tại không đúng.");
+
+  return { message: "Mật khẩu hợp lệ." };
+};
+
+const changePasswordWithOtp = async (
+  userId: string,
+  old_password: string,
+  new_password: string,
+  otp_code: string
+) => {
+  if (!userId || !old_password || !new_password || !otp_code)
+    throw new Error("Thiếu thông tin cần thiết.");
+
+  const [users] = await connection.query(
+    "SELECT password FROM users WHERE id = ?",
+    [userId]
+  );
+  const user = (users as any)[0];
+  if (!user) throw new Error("Không tìm thấy người dùng.");
+
+  const ok = await verifyPassword(old_password, user.password);
+  if (!ok) throw new Error("Mật khẩu hiện tại không đúng.");
+
+  const [rows] = await connection.query(
+    `
+    SELECT id FROM user_verifications
+    WHERE user_id = ?
+      AND vtype = 'CHANGE_PASSWORD'
+      AND code = ?
+      AND consumed_at IS NULL
+      AND expires_at > NOW()
+    ORDER BY created_at DESC
+    LIMIT 1
+  `,
+    [userId, otp_code]
+  );
+
+  const record = (rows as any)[0];
+  if (!record) throw new Error("Mã xác minh không hợp lệ hoặc đã hết hạn.");
+
+  const hashed = await hashPassword(new_password);
+  await connection.query("UPDATE users SET password = ? WHERE id = ?", [
+    hashed,
+    userId,
+  ]);
+  await connection.query(
+    "UPDATE user_verifications SET consumed_at = NOW() WHERE id = ?",
+    [record.id]
+  );
+
+  return { message: "Đổi mật khẩu thành công." };
+};
 
 // xuất phát hết luôn
 const userServices = {
@@ -112,6 +193,8 @@ const userServices = {
   updateUserById,
   getUserByEmail,
   getUserByStudentId,
+  checkCurrentPassword,
+  changePasswordWithOtp,
 };
 
 export default userServices;

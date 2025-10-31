@@ -14,6 +14,9 @@ router.patch(
   userController.updateCurrentUserAvatarController
 );
 
+// lấy thông tin
+router.get("/profile", authMiddleware, userController.getCurrentUserController);
+
 // tự xem
 router.get(
   "/:user_id",
@@ -28,6 +31,17 @@ router.patch(
   authMiddleware,
   authorizeOrOwner(),
   userController.updateUserByIdController
+);
+
+router.post(
+  "/check-password",
+  authMiddleware,
+  userController.checkCurrentPasswordController
+);
+router.post(
+  "/change-password/verify",
+  authMiddleware,
+  userController.changePasswordWithOtpController
 );
 
 export default router;

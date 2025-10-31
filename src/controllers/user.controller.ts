@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import userServices from "../services/user.service.ts";
 import { uploadToCloudinary } from "../utils/cloudinary.ts";
 import { userModel } from "../models/index.ts";
+import { verifyPassword, hashPassword } from "../utils/password.ts";
+import connection from "../config/db.ts";
 
 // get user bằng id
 const getUserByIdController = async (
@@ -145,9 +147,60 @@ const updateCurrentUserAvatarController = async (
   }
 };
 
+const checkCurrentPasswordController = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    const { password } = req.body;
+    const result = await userServices.checkCurrentPassword(userId, password);
+    res.status(200).json(result);
+  } catch (err: any) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+const changePasswordWithOtpController = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    const { old_password, new_password, otp_code } = req.body;
+    const result = await userServices.changePasswordWithOtp(
+      userId,
+      old_password,
+      new_password,
+      otp_code
+    );
+    res.status(200).json(result);
+  } catch (err: any) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+const getCurrentUserController = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ message: "Không xác thực được người dùng" });
+    }
+
+    const user = await userServices.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    res.status(200).json(user);
+  } catch (err: any) {
+    console.error("[getCurrentUserController] Error:", err);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
 export {
   getUserByIdController,
   updateUserByIdController,
   updateUserAvatarByIdController,
   updateCurrentUserAvatarController,
+  checkCurrentPasswordController,
+  changePasswordWithOtpController,
+  getCurrentUserController,
 };

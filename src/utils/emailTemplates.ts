@@ -196,3 +196,34 @@ export const sendAccountSuspendedEmail = async (
 
   await sendMail(to, subject, html, "account-suspended");
 };
+
+export const sendChangePasswordOtpEmail = async (
+  to: string,
+  userName: string,
+  code: string
+): Promise<void> => {
+  const subject = "Mã xác minh thay đổi mật khẩu - UNETI Library";
+  const html = `
+  <div style="font-family:'Segoe UI', Roboto, sans-serif; background:#f8fafc; padding:32px;">
+    <div style="max-width:520px; margin:auto; background:#ffffff; border-radius:16px; 
+      box-shadow:0 4px 20px rgba(0,0,0,0.08); padding:32px 40px;">
+      <h2 style="color:#4F46E5; text-align:center; font-size:22px; margin:0 0 24px;">
+        Xác minh thay đổi mật khẩu
+      </h2>
+      <p style="font-size:15px; color:#334155; margin:0 0 8px;">Xin chào <b>${userName}</b>,</p>
+      <p style="font-size:15px; color:#334155; margin:0 0 12px;">Mã OTP của bạn là:</p>
+      <div style="text-align:center; font-size:36px; font-weight:700; letter-spacing:6px; color:#4F46E5; margin:16px 0;">
+        ${code}
+      </div>
+      <p style="font-size:14px; color:#64748B; line-height:1.6;">
+        Mã có hiệu lực trong <b>10 phút</b>. Nếu không phải bạn yêu cầu, hãy bỏ qua email này.
+      </p>
+    </div>
+    <p style="text-align:center; font-size:12px; color:#94a3b8; margin-top:20px;">
+      © 2025 HBH Library System
+    </p>
+  </div>
+  `;
+
+  await sendMail(to, subject, html, "change-password");
+};
