@@ -8,10 +8,6 @@ import { getConnectionPoolMetrics } from "../config/db.ts";
 
 const router = Router();
 
-/**
- * GET /api/v1/metrics/performance
- * Lấy performance metrics của API
- */
 router.get("/performance", async (req: Request, res: Response) => {
   try {
     const metrics = getPerformanceMetrics();
@@ -28,10 +24,6 @@ router.get("/performance", async (req: Request, res: Response) => {
   }
 });
 
-/**
- * GET /api/v1/metrics/cache
- * Lấy Redis cache metrics
- */
 router.get("/cache", (req: Request, res: Response) => {
   try {
     const metrics = getCacheMetrics();
@@ -48,10 +40,6 @@ router.get("/cache", (req: Request, res: Response) => {
   }
 });
 
-/**
- * GET /api/v1/metrics/database
- * Lấy database connection pool metrics
- */
 router.get("/database", async (req: Request, res: Response) => {
   try {
     const metrics = await getConnectionPoolMetrics();
@@ -68,10 +56,6 @@ router.get("/database", async (req: Request, res: Response) => {
   }
 });
 
-/**
- * GET /api/v1/metrics/all
- * Lấy tất cả metrics
- */
 router.get("/all", async (req: Request, res: Response) => {
   try {
     const performance = getPerformanceMetrics();
@@ -96,10 +80,6 @@ router.get("/all", async (req: Request, res: Response) => {
   }
 });
 
-/**
- * POST /api/v1/metrics/reset
- * Reset metrics (dành cho testing/development)
- */
 router.post("/reset", (req: Request, res: Response) => {
   try {
     if (process.env.NODE_ENV === "production") {
@@ -125,17 +105,12 @@ router.post("/reset", (req: Request, res: Response) => {
   }
 });
 
-/**
- * GET /api/v1/metrics/health
- * Health check endpoint với basic metrics
- */
 router.get("/health", async (req: Request, res: Response) => {
   try {
     const cache = getCacheMetrics();
     const database = await getConnectionPoolMetrics();
 
-    const isHealthy =
-      database !== null && database.utilizationPercent < 90; // Warn if > 90% utilized
+    const isHealthy = database !== null && database.utilizationPercent < 90;
 
     res.status(isHealthy ? 200 : 503).json({
       success: isHealthy,

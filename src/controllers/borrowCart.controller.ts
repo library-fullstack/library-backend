@@ -12,7 +12,6 @@ export const BorrowCartController = {
         return;
       }
 
-      // Optimized: get items and summary in 1 query
       const { items, summary } =
         await BorrowCartService.getCartWithSummary(userId);
 
@@ -61,7 +60,6 @@ export const BorrowCartController = {
       }
 
       await BorrowCartService.addItem(userId, bookId, quantity);
-      // Optimized: get items and summary in 1 query
       const { items, summary } =
         await BorrowCartService.getCartWithSummary(userId);
 
@@ -76,7 +74,6 @@ export const BorrowCartController = {
       const err = error as any;
       console.error("Error adding item to cart:", error);
 
-      // ❌ Handle out of stock error
       if (err.code === "OUT_OF_STOCK") {
         console.log(`[addItem] OUT_OF_STOCK: ${err.message}`);
         return res.status(400).json({
@@ -86,7 +83,6 @@ export const BorrowCartController = {
         });
       }
 
-      // ❌ Handle insufficient stock error (user has some in cart but can't add more)
       if (err.code === "EXCEEDS_AVAILABILITY") {
         console.log(`[addItem] EXCEEDS_AVAILABILITY: ${err.message}`);
         return res.status(400).json({
@@ -106,12 +102,14 @@ export const BorrowCartController = {
         });
       }
 
-      // Handle deadlock errors (concurrent transactions)
       if (err.code === "ER_LOCK_DEADLOCK") {
-        console.log(`[addItem] DEADLOCK detected - instructing client to retry`);
+        console.log(
+          `[addItem] DEADLOCK detected - instructing client to retry`
+        );
         return res.status(409).json({
           success: false,
-          message: "Có người khác đang thao tác với cuốn sách này. Vui lòng thử lại.",
+          message:
+            "Có người khác đang thao tác với cuốn sách này. Vui lòng thử lại.",
           code: "CONFLICT",
         });
       }
@@ -139,7 +137,6 @@ export const BorrowCartController = {
       }
 
       await BorrowCartService.updateQuantity(userId, bookId, quantity);
-      // Optimized: get items and summary in 1 query
       const { items, summary } =
         await BorrowCartService.getCartWithSummary(userId);
 
@@ -154,7 +151,6 @@ export const BorrowCartController = {
       const err = error as any;
       console.error("Error updating cart item:", error);
 
-      // ❌ Handle out of stock error
       if (err.code === "OUT_OF_STOCK") {
         console.log(`[updateQuantity] OUT_OF_STOCK: ${err.message}`);
         return res.status(400).json({
@@ -164,7 +160,6 @@ export const BorrowCartController = {
         });
       }
 
-      // ❌ Handle insufficient stock error
       if (err.code === "EXCEEDS_AVAILABILITY") {
         console.log(`[updateQuantity] EXCEEDS_AVAILABILITY: ${err.message}`);
         return res.status(400).json({
@@ -174,12 +169,14 @@ export const BorrowCartController = {
         });
       }
 
-      // Handle deadlock errors (concurrent transactions)
       if (err.code === "ER_LOCK_DEADLOCK") {
-        console.log(`[updateQuantity] DEADLOCK detected - instructing client to retry`);
+        console.log(
+          `[updateQuantity] DEADLOCK detected - instructing client to retry`
+        );
         return res.status(409).json({
           success: false,
-          message: "Có người khác đang thao tác với cuốn sách này. Vui lòng thử lại.",
+          message:
+            "Có người khác đang thao tác với cuốn sách này. Vui lòng thử lại.",
           code: "CONFLICT",
         });
       }
@@ -207,7 +204,6 @@ export const BorrowCartController = {
       }
 
       await BorrowCartService.removeItem(userId, bookId);
-      // Optimized: get items and summary in 1 query
       const { items, summary } =
         await BorrowCartService.getCartWithSummary(userId);
 

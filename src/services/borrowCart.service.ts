@@ -43,7 +43,6 @@ export const BorrowCartService = {
   },
 
   async getCartWithSummary(userId: string) {
-    // Get both items and summary in optimized way
     const query = `
       SELECT
         bc.id,
@@ -71,14 +70,12 @@ export const BorrowCartService = {
     const [items] = await connection.query(query, [userId]);
     const cartItems = (items as CartItemWithBook[]) || [];
 
-    // Log each item
     cartItems.forEach((item) => {
       console.log(
         `[getCartWithSummary] Book ${item.book_id}: available=${item.available_count}, quantity=${item.quantity}`
       );
     });
 
-    // Calculate summary from items (no extra DB query)
     const totalItems = cartItems.length;
     const totalBooks = cartItems.reduce(
       (sum, item) => sum + (item.quantity || 0),
@@ -99,9 +96,6 @@ export const BorrowCartService = {
     bookId: number,
     quantity: number
   ): Promise<CartItemWithBook> {
-    // ✅ NEW LOGIC: Cart is for INTENT only, NOT for locking stock
-    // Multiple users can add same book to cart
-    // Stock validation happens at CHECKOUT (createBorrow), not here
     const conn = await connection.getConnection();
 
     try {
@@ -111,7 +105,6 @@ export const BorrowCartService = {
         `[addItem] Received: bookId=${bookId}, quantity=${quantity}, userId=${userId}`
       );
 
-      // Check if book exists and get available count (for logging only)
       const bookCheckQuery = `
         SELECT 
           b.id,
@@ -140,7 +133,6 @@ export const BorrowCartService = {
         `[addItem] Book ${bookId}: total_copies=${bookData[0]?.total_copies}, available=${availableCount}`
       );
 
-      // ✅ STEP 2: Insert or update cart (no validation, just add)
       const upsertQuery = `
         INSERT INTO borrow_carts (user_id, book_id, quantity, created_at, updated_at)
         VALUES (?, ?, ?, NOW(), NOW())
@@ -150,7 +142,6 @@ export const BorrowCartService = {
       `;
       await conn.query(upsertQuery, [userId, bookId, quantity]);
 
-      // ✅ STEP 3: Get updated cart item
       const selectQuery = `
         SELECT
           bc.id,
@@ -185,12 +176,10 @@ export const BorrowCartService = {
       );
       return items[0];
     } catch (error) {
-      // 🔒 ROLLBACK on any error
       await conn.rollback();
       console.error(`[addItem] ERROR - Transaction rolled back:`, error);
       throw error;
     } finally {
-      // 🔒 Always release connection back to pool
       conn.release();
     }
   },
@@ -204,9 +193,6 @@ export const BorrowCartService = {
       return this.removeItem(userId, bookId);
     }
 
-    // ✅ NEW LOGIC: No validation here, just update cart
-    // Frontend will show warning if quantity > available
-    // Real validation happens at checkout
     const conn = await connection.getConnection();
 
     try {
@@ -216,7 +202,6 @@ export const BorrowCartService = {
         `[updateQuantity] Updating: userId=${userId}, bookId=${bookId}, quantity=${quantity}`
       );
 
-      // ✅ STEP 1: Update cart quantity (no validation)
       const updateQuery = `
         UPDATE borrow_carts
         SET quantity = ?, updated_at = NOW()
@@ -224,7 +209,6 @@ export const BorrowCartService = {
       `;
       await conn.query(updateQuery, [quantity, userId, bookId]);
 
-      // ✅ STEP 2: Get updated cart item
       const selectQuery = `
         SELECT
           bc.id,
@@ -259,12 +243,10 @@ export const BorrowCartService = {
       );
       return items[0] || { success: true };
     } catch (error) {
-      // 🔒 ROLLBACK on any error
       await conn.rollback();
       console.error(`[updateQuantity] ERROR - Transaction rolled back:`, error);
       throw error;
     } finally {
-      // 🔒 Always release connection
       conn.release();
     }
   },

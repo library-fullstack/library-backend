@@ -3,10 +3,6 @@ import type { AuthRequest } from "../types/errors.ts";
 import BorrowService from "../services/borrow.service.ts";
 
 export const BorrowController = {
-  /**
-   * Create borrow from cart items
-   * POST /api/v1/borrows
-   */
   async createBorrow(req: AuthRequest, res: Response) {
     try {
       const userId = (req as any).user?.id;
@@ -26,7 +22,6 @@ export const BorrowController = {
         return;
       }
 
-      // Validate items format
       const validItems = items.every(
         (item: any) =>
           item.book_id &&
@@ -50,7 +45,6 @@ export const BorrowController = {
     } catch (error: any) {
       console.error("Error creating borrow:", error);
 
-      // Handle insufficient stock error with detailed information
       if (error.code === "INSUFFICIENT_STOCK") {
         res.status(409).json({
           success: false,

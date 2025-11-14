@@ -19,6 +19,26 @@ import SettingsService from "../services/settings.service.ts";
 
 const router = express.Router();
 
+import connection from "../config/db.ts";
+router.get("/health", async (req, res) => {
+  try {
+    await connection.query("SELECT 1");
+
+    res.status(200).json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || "development",
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: "unhealthy",
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
 router.use("/auth", authRoute);
 router.use("/admin", adminRoute);
 router.use("/users", userRoute);
@@ -33,18 +53,13 @@ router.use("/forum/posts", forumPostRoute);
 router.use("/cart", borrowCartRoute);
 router.use("/borrows", borrowRoute);
 
-// Banner routes - public and admin
 router.use("/banners", bannerPublicRoutes);
 router.use("/admin/banners", bannerAdminRoutes);
 
-// Settings routes - admin only
 router.use("/admin/settings", settingsAdminRoutes);
 
-// Metrics routes - admin only (no auth middleware here, handled in metrics.routes.ts if needed)
 router.use("/metrics", metricsRoute);
 
-// Public settings endpoint - for fetching disable_event_effects (no auth required)
-// Cache 10 phút
 import { cacheMiddleware } from "../middlewares/cache.middleware.ts";
 
 router.get(

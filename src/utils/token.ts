@@ -21,31 +21,22 @@ interface RefreshTokenPayload extends TokenPayload {
   tokenVersion: number;
 }
 
-/**
- * Generate access token (short-lived, 15 minutes)
- */
 export function generateAccessToken(payload: TokenPayload): string {
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: ACCESS_TOKEN_EXPIRY,
   });
 }
 
-/**
- * Generate refresh token (long-lived, 7 days)
- */
 export function generateRefreshToken(payload: TokenPayload): string {
   const refreshPayload: RefreshTokenPayload = {
     ...payload,
-    tokenVersion: 1, // For token rotation
+    tokenVersion: 1,
   };
   return jwt.sign(refreshPayload, REFRESH_TOKEN_SECRET, {
     expiresIn: REFRESH_TOKEN_EXPIRY,
   });
 }
 
-/**
- * Verify and decode access token
- */
 export function verifyAccessToken(token: string): TokenPayload | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
@@ -55,9 +46,6 @@ export function verifyAccessToken(token: string): TokenPayload | null {
   }
 }
 
-/**
- * Verify and decode refresh token
- */
 export function verifyRefreshToken(token: string): RefreshTokenPayload | null {
   try {
     const decoded = jwt.verify(
@@ -70,9 +58,6 @@ export function verifyRefreshToken(token: string): RefreshTokenPayload | null {
   }
 }
 
-/**
- * Store refresh token in database for token rotation
- */
 export async function storeRefreshToken(
   userId: string,
   refreshToken: string,
@@ -102,9 +87,6 @@ export async function storeRefreshToken(
   }
 }
 
-/**
- * Verify refresh token exists and is valid
- */
 export async function verifyRefreshTokenExists(
   userId: string,
   refreshToken: string
@@ -125,9 +107,6 @@ export async function verifyRefreshTokenExists(
   }
 }
 
-/**
- * Revoke refresh token (logout)
- */
 export async function revokeRefreshToken(refreshToken: string): Promise<void> {
   try {
     await connection.query(
@@ -143,9 +122,6 @@ export async function revokeRefreshToken(refreshToken: string): Promise<void> {
   }
 }
 
-/**
- * Revoke all refresh tokens for user (security breach)
- */
 export async function revokeAllRefreshTokens(userId: string): Promise<void> {
   try {
     console.log(`[TokenUtil] Revoking all refresh tokens for user: ${userId}`);
@@ -165,16 +141,10 @@ export async function revokeAllRefreshTokens(userId: string): Promise<void> {
   }
 }
 
-/**
- * Hash refresh token before storing (for security)
- */
 function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-/**
- * Cleanup expired refresh tokens
- */
 export async function cleanupExpiredTokens(): Promise<void> {
   try {
     await connection.query(

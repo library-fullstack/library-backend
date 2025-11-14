@@ -12,17 +12,13 @@ import router from "./routes/index.ts";
 
 const app = express();
 
-// Performance monitoring - track all requests
 app.use(performanceMiddleware);
 
-// Body parser
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
-// Cookie parser - MUST be after body parser
 app.use(cookieParser());
 
-// Security headers
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
@@ -30,7 +26,6 @@ app.use(
   })
 );
 
-// Compression cho responses
 app.use(
   compression({
     filter: (req, res) => {
@@ -39,14 +34,12 @@ app.use(
       }
       return compression.filter(req, res);
     },
-    level: 6, // Balance giữa tốc độ và compression ratio
+    level: 6,
   })
 );
 
-// Logging
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
-// Rate limiting - apply globally (exclude OPTIONS preflight requests)
 app.use((req, res, next) => {
   if (req.method === "OPTIONS") {
     return next();
@@ -64,17 +57,19 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) {
-        console.log("CORS: Cho phép yêu cầu khi không có tên miền");
+        if (process.env.NODE_ENV === "production") {
+          console.log("CORS: Rejecting request without origin in production");
+          return callback(new Error("Origin header required in production"));
+        }
+        console.log("CORS: Cho phép yêu cầu khi không có tên miền (dev mode)");
         return callback(null, true);
       }
 
-      // lấy cors từ env
       if (allowedOrigins.includes(origin)) {
         console.log("CORS: Cho phép tiền miền từ whitelist:", origin);
         return callback(null, true);
       }
 
-      // cho phép all LAN và public IP
       const isLAN =
         /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) ||
         /^http:\/\/172\.\d+\.\d+\.\d+(:\d+)?$/.test(origin) ||

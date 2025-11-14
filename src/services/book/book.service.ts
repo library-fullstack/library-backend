@@ -56,17 +56,13 @@ const getAllBooks = async (filters?: BookFilters): Promise<Book[]> => {
   const params: any[] = [];
 
   if (filters?.keyword) {
-    // Trim whitespace và normalize keyword
     const normalizedKeyword = filters.keyword.trim();
 
-    // Hỗ trợ tìm kiếm multiple authors với " OR " separator
     const keywords = normalizedKeyword.split(" OR ").map((k) => k.trim());
 
-    // Xác định loại tìm kiếm
     const searchType = filters.searchType || "all";
 
     if (keywords.length > 1) {
-      // Multiple keywords: tìm sách có bất kỳ tác giả/nhà xuất bản/tiêu đề nào khớp
       const orConditions = keywords
         .map(() => {
           if (searchType === "author") {
@@ -90,7 +86,6 @@ const getAllBooks = async (filters?: BookFilters): Promise<Book[]> => {
         }
       });
     } else {
-      // Single keyword - sử dụng TRIM cho author names để loại bỏ khoảng trắng thừa
       if (searchType === "author") {
         sql += " AND TRIM(a.name) LIKE ?";
         params.push(`%${normalizedKeyword}%`);
@@ -101,7 +96,6 @@ const getAllBooks = async (filters?: BookFilters): Promise<Book[]> => {
         sql += " AND p.name LIKE ?";
         params.push(`%${normalizedKeyword}%`);
       } else {
-        // all
         sql += " AND (b.title LIKE ? OR TRIM(a.name) LIKE ? OR p.name LIKE ?)";
         params.push(
           `%${normalizedKeyword}%`,
@@ -122,13 +116,10 @@ const getAllBooks = async (filters?: BookFilters): Promise<Book[]> => {
     params.push(filters.status);
   }
 
-  // Pagination - support both offset and cursor
   const limit = filters?.limit ?? 12;
   const offset = filters?.offset ?? 0;
   const cursor = filters?.cursor;
 
-  // Use offset-based pagination (more reliable with complex ORDER BY)
-  // cursor is kept for backwards compatibility but offset is preferred
   const pageOffset = cursor ? Number(cursor) : offset;
 
   sql += `

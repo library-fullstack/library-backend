@@ -9,12 +9,6 @@ import * as statisticsController from "../controllers/statistics.controller.ts";
 
 const router = express.Router();
 
-// ❌ REMOVED CACHE: Stats change frequently when:
-// - Users borrow/return books
-// - Admin updates borrow status
-// - New users register
-// - Books are added/removed
-// Cache would show stale data to admins
 router.get(
   "/dashboard",
   authMiddleware,
@@ -43,7 +37,6 @@ router.get(
   statisticsController.getBorrowManagementController
 );
 
-// No longer need invalidateCacheMiddleware since we removed stats cache
 router.patch(
   "/borrows/:borrow_id",
   authMiddleware,

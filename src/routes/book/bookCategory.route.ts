@@ -9,7 +9,6 @@ import * as controller from "../../controllers/book/bookCategory.controller.ts";
 
 const router = express.Router();
 
-// Cache categories 15 phút (ít thay đổi)
 router.get(
   "/",
   cacheMiddleware(900, "categories"),

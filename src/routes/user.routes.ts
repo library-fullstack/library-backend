@@ -21,12 +21,8 @@ router.patch(
 );
 
 // lấy thông tin
-// NO CACHE: User profile is user-specific, cache would return wrong user data
 router.get("/profile", authMiddleware, userController.getCurrentUserController);
 
-// ❌ REMOVED CACHE: Cache key "user:detail" was same for ALL users
-// URL /users/123 and /users/456 would generate different hash keys anyway,
-// but user data changes frequently (profile updates, avatar changes, etc.)
 router.get(
   "/:user_id",
   authMiddleware,
@@ -59,9 +55,6 @@ router.post(
   userController.changePasswordWithOtpController
 );
 
-// TEMP
-// TEMP
-// TEMP
 // xác nhận thông tin
 router.post(
   "/confirm-student-info",

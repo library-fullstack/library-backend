@@ -6,7 +6,6 @@ import cloudinary from "../../config/cloudinary.ts";
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
-// POST /api/v1/books/upload/image
 router.post("/image", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {

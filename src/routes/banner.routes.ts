@@ -23,27 +23,18 @@ import {
 const bannerPublicRoutes = Router();
 const bannerAdminRoutes = Router();
 
-/**
- * Public routes - no auth required
- */
-// GET active banner - cache 5 phút
 bannerPublicRoutes.get(
   "/active",
-  cacheMiddleware(300, "banners:active"),
+  cacheMiddleware(10, "banners:active"),
   getActiveBannerController
 );
 
-// GET all banners - cache 5 phút
 bannerPublicRoutes.get(
   "/",
-  cacheMiddleware(300, "banners:list"),
+  cacheMiddleware(10, "banners:list"),
   getAllBannersController
 );
 
-/**
- * Admin routes - require authentication and ADMIN role
- */
-// POST upload image - requires admin
 bannerAdminRoutes.post(
   "/upload",
   authMiddleware,
@@ -53,7 +44,6 @@ bannerAdminRoutes.post(
   uploadBannerImageController
 );
 
-// GET all banners - for admin panel
 bannerAdminRoutes.get(
   "/",
   authMiddleware,
@@ -61,7 +51,6 @@ bannerAdminRoutes.get(
   getAllBannersController
 );
 
-// GET banner by ID - requires admin
 bannerAdminRoutes.get(
   "/:id",
   authMiddleware,
@@ -69,7 +58,6 @@ bannerAdminRoutes.get(
   getBannerByIdController
 );
 
-// POST create banner - requires admin
 bannerAdminRoutes.post(
   "/",
   authMiddleware,
@@ -78,7 +66,6 @@ bannerAdminRoutes.post(
   createBannerController
 );
 
-// PUT update banner - requires admin
 bannerAdminRoutes.put(
   "/:id",
   authMiddleware,
@@ -87,7 +74,6 @@ bannerAdminRoutes.put(
   updateBannerController
 );
 
-// DELETE banner - requires admin
 bannerAdminRoutes.delete(
   "/:id",
   authMiddleware,
@@ -96,7 +82,6 @@ bannerAdminRoutes.delete(
   deleteBannerController
 );
 
-// PATCH toggle status - requires admin
 bannerAdminRoutes.patch(
   "/:id/status",
   authMiddleware,

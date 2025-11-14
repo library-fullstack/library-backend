@@ -1,10 +1,6 @@
 import { Request, Response } from "express";
 import SettingsService from "../services/settings.service.ts";
 
-/**
- * Get a setting by key
- * GET /api/v1/admin/settings/:key
- */
 export const getSettingController = async (
   req: Request,
   res: Response
@@ -36,7 +32,6 @@ export const getSettingController = async (
       data: setting,
     });
   } catch (error) {
-    const err = error as ApiError;
     console.error("Error in getSettingController:", error);
     res.status(500).json({
       success: false,
@@ -46,10 +41,6 @@ export const getSettingController = async (
   }
 };
 
-/**
- * Get all settings
- * GET /api/v1/admin/settings
- */
 export const getAllSettingsController = async (
   _req: Request,
   res: Response
@@ -63,7 +54,6 @@ export const getAllSettingsController = async (
       data: settings,
     });
   } catch (error) {
-    const err = error as ApiError;
     console.error("Error in getAllSettingsController:", error);
     res.status(500).json({
       success: false,
@@ -73,10 +63,6 @@ export const getAllSettingsController = async (
   }
 };
 
-/**
- * Update a setting by key
- * PUT /api/v1/admin/settings/:key
- */
 export const updateSettingController = async (
   req: Request,
   res: Response
@@ -101,7 +87,6 @@ export const updateSettingController = async (
       return;
     }
 
-    // Check if setting exists, if not create it
     let setting = await SettingsService.getSettingByKey(key);
     if (!setting) {
       setting = await SettingsService.createSetting({
@@ -122,7 +107,6 @@ export const updateSettingController = async (
       data: setting,
     });
   } catch (error) {
-    const err = error as ApiError;
     console.error("Error in updateSettingController:", error);
     res.status(500).json({
       success: false,
@@ -132,10 +116,6 @@ export const updateSettingController = async (
   }
 };
 
-/**
- * Toggle a boolean setting
- * PATCH /api/v1/admin/settings/:key/toggle
- */
 export const toggleSettingController = async (
   req: Request,
   res: Response
@@ -162,7 +142,6 @@ export const toggleSettingController = async (
       },
     });
   } catch (error) {
-    const err = error as ApiError;
     console.error("Error in toggleSettingController:", error);
     res.status(500).json({
       success: false,
@@ -172,10 +151,6 @@ export const toggleSettingController = async (
   }
 };
 
-/**
- * Delete a setting by key
- * DELETE /api/v1/admin/settings/:key
- */
 export const deleteSettingController = async (
   req: Request,
   res: Response
@@ -206,7 +181,6 @@ export const deleteSettingController = async (
       message: "Setting deleted successfully",
     });
   } catch (error) {
-    const err = error as ApiError;
     console.error("Error in deleteSettingController:", error);
     res.status(500).json({
       success: false,
@@ -215,4 +189,3 @@ export const deleteSettingController = async (
     });
   }
 };
-

@@ -1,7 +1,6 @@
 import connection from "../config/db.ts";
 import { userModel } from "../models/index.ts";
 import { v4 as uuidv4 } from "uuid";
-// mã hoá password
 import { verifyPassword, hashPassword } from "../utils/password.ts";
 import { cache } from "../config/redis.ts";
 

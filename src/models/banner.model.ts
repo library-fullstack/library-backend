@@ -1,6 +1,5 @@
 import { RowDataPacket } from "mysql2";
 
-// Banner data in database
 interface Banner extends RowDataPacket {
   id: string;
   image: string;
@@ -22,7 +21,6 @@ interface Banner extends RowDataPacket {
   updated_by?: string;
 }
 
-// When creating a banner
 interface CreateBannerInput {
   image: string;
   overlay: "dark" | "light";
@@ -38,10 +36,8 @@ interface CreateBannerInput {
   is_active?: boolean;
 }
 
-// When updating a banner
 type UpdateBannerInput = Partial<CreateBannerInput>;
 
-// Response format for API
 interface BannerResponse {
   success: boolean;
   message: string;

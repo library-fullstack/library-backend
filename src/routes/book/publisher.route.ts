@@ -9,7 +9,6 @@ import * as controller from "../../controllers/book/bookPublisher.controller.ts"
 
 const router = express.Router();
 
-// Cache publishers 15 phút (ít thay đổi)
 router.get(
   "/",
   cacheMiddleware(900, "publishers"),

@@ -1,7 +1,6 @@
 import { createClient } from "redis";
 import { env } from "./env.ts";
 
-// Tạo Redis client
 const redisClient = createClient({
   url: env.REDIS_URL || "redis://localhost:6379",
   socket: {
@@ -10,13 +9,11 @@ const redisClient = createClient({
         console.error("[REDIS] Không thể kết nối Redis sau 10 lần thử");
         return new Error("[REDIS] Redis connection failed");
       }
-      // Exponential backoff: 100ms, 200ms, 400ms, 800ms, ...
       return Math.min(retries * 100, 3000);
     },
   },
 });
 
-// Event handlers
 redisClient.on("error", (err: Error) => {
   console.error("[REDIS] Redis Client Error:", err);
 });
@@ -33,7 +30,6 @@ redisClient.on("reconnecting", () => {
   console.log("[REDIS] Redis client đang kết nối lại...");
 });
 
-// Kết nối Redis
 async function connectRedis() {
   try {
     await redisClient.connect();
@@ -45,14 +41,10 @@ async function connectRedis() {
 
 connectRedis();
 
-// Cache metrics
 let cacheHits = 0;
 let cacheMisses = 0;
 let cacheErrors = 0;
 
-/**
- * Lấy cache metrics
- */
 export const getCacheMetrics = () => {
   const total = cacheHits + cacheMisses;
   const hitRate = total > 0 ? ((cacheHits / total) * 100).toFixed(2) : "0.00";
@@ -66,20 +58,13 @@ export const getCacheMetrics = () => {
   };
 };
 
-/**
- * Reset cache metrics
- */
 export const resetCacheMetrics = () => {
   cacheHits = 0;
   cacheMisses = 0;
   cacheErrors = 0;
 };
 
-// Cache helper functions
 export const cache = {
-  /**
-   * Lấy giá trị từ cache
-   */
   async get<T>(key: string): Promise<T | null> {
     if (!redisClient.isOpen) return null;
     try {
@@ -98,12 +83,6 @@ export const cache = {
     }
   },
 
-  /**
-   * Lưu giá trị vào cache với TTL (time to live)
-   * @param key - Cache key
-   * @param value - Giá trị cần cache
-   * @param ttl - Time to live (seconds), mặc định 5 phút
-   */
   async set(key: string, value: any, ttl: number = 300): Promise<boolean> {
     if (!redisClient.isOpen) return false;
     try {
@@ -115,9 +94,6 @@ export const cache = {
     }
   },
 
-  /**
-   * Xóa một hoặc nhiều keys khỏi cache
-   */
   async del(...keys: string[]): Promise<boolean> {
     if (!redisClient.isOpen) return false;
     try {
@@ -132,29 +108,22 @@ export const cache = {
     }
   },
 
-  /**
-   * Xóa tất cả keys matching pattern
-   * @param pattern - Pattern để match (vd: "books:*")
-   * Sử dụng SCAN thay vì KEYS để tránh block Redis trong production
-   */
   async delPattern(pattern: string): Promise<boolean> {
     if (!redisClient.isOpen) return false;
     try {
       const keys: string[] = [];
       let cursor: string = "0";
 
-      // Sử dụng SCAN thay vì KEYS (O(N) non-blocking)
       do {
         const result = await redisClient.scan(cursor, {
           MATCH: pattern,
-          COUNT: 100, // Scan 100 keys mỗi lần
+          COUNT: 100,
         });
         cursor = result.cursor;
         keys.push(...result.keys);
       } while (cursor !== "0");
 
       if (keys.length > 0) {
-        // Xóa theo batch để tránh quá tải
         const batchSize = 100;
         for (let i = 0; i < keys.length; i += batchSize) {
           const batch = keys.slice(i, i + batchSize);
@@ -169,9 +138,6 @@ export const cache = {
     }
   },
 
-  /**
-   * Check xem key có tồn tại không
-   */
   async exists(key: string): Promise<boolean> {
     if (!redisClient.isOpen) return false;
     try {
@@ -183,9 +149,6 @@ export const cache = {
     }
   },
 
-  /**
-   * Tăng giá trị counter
-   */
   async incr(key: string): Promise<number> {
     if (!redisClient.isOpen) return 0;
     try {
@@ -196,9 +159,6 @@ export const cache = {
     }
   },
 
-  /**
-   * Set expiration cho key
-   */
   async expire(key: string, seconds: number): Promise<boolean> {
     if (!redisClient.isOpen) return false;
     try {

@@ -31,10 +31,8 @@ router.post(
   loginController
 );
 
-// Refresh token - exchange old token for new access token
 router.post("/refresh", secureCacheMiddleware, refreshTokenController);
 
-// Logout - revoke refresh token
 router.post("/logout", secureCacheMiddleware, logoutController);
 
 // quên mật khẩu - no-cache for security

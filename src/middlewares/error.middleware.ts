@@ -15,7 +15,6 @@ export const errorMiddleware = (
   console.error("Stack:", error?.stack || "(no stack)");
   console.error("Raw error object:", JSON.stringify(error, null, 2));
 
-  // Prevent sending response multiple times
   if (res.headersSent) {
     console.error("Headers already sent, cannot send error response");
     return next(error);

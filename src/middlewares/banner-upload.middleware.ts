@@ -54,7 +54,7 @@ const uploadBannerToCloudinary = async (
         {
           folder: "library/banners",
           resource_type: "auto",
-          format: "webp", // Convert to WebP
+          format: "webp",
           quality: "auto",
           fetch_format: "auto",
         },

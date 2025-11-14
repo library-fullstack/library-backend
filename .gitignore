@@ -41,6 +41,7 @@ pids/
 .idea/
 .DS_Store
 Thumbs.db
+.claude/
 
 # test và coverage
 coverage/

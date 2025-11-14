@@ -44,7 +44,6 @@ const getDashboardStatistics = async (): Promise<DashboardStats> => {
     startMonth.setDate(1);
     startMonth.setHours(0, 0, 0, 0);
 
-    // OPTIMIZED: Batch all count queries into a single query
     const [countsResult] = await connection.query<RowDataPacket[]>(
       `SELECT
         (SELECT COUNT(*) FROM books) as total_books,
@@ -73,7 +72,6 @@ const getDashboardStatistics = async (): Promise<DashboardStats> => {
     let recentBorrowsResult: RowDataPacket[] = [];
 
     try {
-      // OPTIMIZED: Batch all borrow counts into a single query
       const [borrowCountsResult] = await connection.query<RowDataPacket[]>(
         `SELECT
           (SELECT COUNT(*) FROM borrows) as total_borrows,
@@ -110,7 +108,6 @@ const getDashboardStatistics = async (): Promise<DashboardStats> => {
       console.log("Borrows table not available, using default values");
     }
 
-    // OPTIMIZED: Batch monthly stats into a single query using UNION ALL
     let monthlyStatsResult: Array<{
       month: string;
       books: number;
@@ -135,11 +132,12 @@ const getDashboardStatistics = async (): Promise<DashboardStats> => {
         });
       }
 
-      // Build single query with UNION ALL for all 6 months
       const queries = monthDates
-        .map(() => `SELECT ? as month_label,
+        .map(
+          () => `SELECT ? as month_label,
           (SELECT COUNT(*) FROM books WHERE created_at >= ? AND created_at < ?) as books,
-          (SELECT COUNT(*) FROM users WHERE created_at >= ? AND created_at < ?) as users`)
+          (SELECT COUNT(*) FROM users WHERE created_at >= ? AND created_at < ?) as users`
+        )
         .join(" UNION ALL ");
 
       const params: any[] = [];

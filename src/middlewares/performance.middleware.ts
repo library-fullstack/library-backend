@@ -19,12 +19,9 @@ const metrics: PerformanceMetrics = {
   requestsByEndpoint: new Map(),
 };
 
-const SLOW_QUERY_THRESHOLD = 1000; // 1 giây
-const MAX_SLOW_QUERIES_LOG = 100; // Giữ tối đa 100 slow queries
+const SLOW_QUERY_THRESHOLD = 1000;
+const MAX_SLOW_QUERIES_LOG = 100;
 
-/**
- * Middleware theo dõi performance của API endpoints
- */
 export const performanceMiddleware = (
   req: Request,
   res: Response,
@@ -32,16 +29,13 @@ export const performanceMiddleware = (
 ) => {
   const startTime = Date.now();
 
-  // Hook vào response finish event
   res.on("finish", () => {
     const duration = Date.now() - startTime;
     const endpoint = `${req.method} ${req.route?.path || req.path}`;
 
-    // Update metrics
     metrics.totalRequests++;
     metrics.totalDuration += duration;
 
-    // Track per-endpoint metrics
     const endpointMetrics = metrics.requestsByEndpoint.get(endpoint);
     if (endpointMetrics) {
       endpointMetrics.count++;
@@ -53,13 +47,11 @@ export const performanceMiddleware = (
       });
     }
 
-    // Log slow queries
     if (duration > SLOW_QUERY_THRESHOLD) {
       console.warn(
         `[PERFORMANCE] Slow request: ${endpoint} took ${duration}ms`
       );
 
-      // Keep track of slow queries (FIFO)
       if (metrics.slowQueries.length >= MAX_SLOW_QUERIES_LOG) {
         metrics.slowQueries.shift();
       }
@@ -72,14 +64,13 @@ export const performanceMiddleware = (
       });
     }
 
-    // Log all requests in development
     if (process.env.NODE_ENV === "development") {
       const statusColor =
         res.statusCode >= 500
-          ? "\x1b[31m" // Red
+          ? "\x1b[31m"
           : res.statusCode >= 400
-            ? "\x1b[33m" // Yellow
-            : "\x1b[32m"; // Green
+            ? "\x1b[33m"
+            : "\x1b[32m";
       console.log(
         `[PERFORMANCE] ${statusColor}${res.statusCode}\x1b[0m ${endpoint} - ${duration}ms`
       );
@@ -89,16 +80,12 @@ export const performanceMiddleware = (
   next();
 };
 
-/**
- * Lấy performance metrics
- */
 export const getPerformanceMetrics = () => {
   const avgDuration =
     metrics.totalRequests > 0
       ? Math.round(metrics.totalDuration / metrics.totalRequests)
       : 0;
 
-  // Tính top slow endpoints
   const endpointStats = Array.from(metrics.requestsByEndpoint.entries())
     .map(([endpoint, stats]) => ({
       endpoint,
@@ -115,14 +102,11 @@ export const getPerformanceMetrics = () => {
       avgDuration,
       totalDuration: metrics.totalDuration,
     },
-    slowQueries: metrics.slowQueries.slice(-10), // Last 10 slow queries
+    slowQueries: metrics.slowQueries.slice(-10),
     topSlowEndpoints: endpointStats,
   };
 };
 
-/**
- * Reset metrics (hữu ích cho testing)
- */
 export const resetPerformanceMetrics = () => {
   metrics.totalRequests = 0;
   metrics.totalDuration = 0;

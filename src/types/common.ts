@@ -26,8 +26,8 @@ export interface BookFilters {
   sortBy?: BookSortBy;
   limit?: number;
   offset?: number;
-  cursor?: number; // Cursor-based pagination
-  searchType?: "all" | "author" | "title" | "publisher"; // Loại tìm kiếm
+  cursor?: number;
+  searchType?: "all" | "author" | "title" | "publisher";
 }
 
 // check

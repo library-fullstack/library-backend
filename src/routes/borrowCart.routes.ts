@@ -10,7 +10,6 @@ const router = Router();
 
 router.use(authMiddleware);
 
-// REMOVED CACHE: Cache key "cart:user" was same for ALL users, causing wrong cart data
 router.get("/", BorrowCartController.getCart);
 router.get("/summary", BorrowCartController.getCartSummary);
 router.post(

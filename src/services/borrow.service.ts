@@ -18,17 +18,12 @@ interface ValidationResult {
 }
 
 export const BorrowService = {
-  /**
-   * Validate cart items against actual availability + existing holds
-   * Checks both AVAILABLE copies and copies already RESERVED/HELD
-   */
   async validateCartAvailability(
     items: CreateBorrowItem[]
   ): Promise<ValidationResult> {
     const errors: ValidationResult["errors"] = [];
 
     for (const item of items) {
-      // Get available count MINUS already held/reserved copies
       const availableQuery = `
         SELECT 
           b.title,
@@ -56,7 +51,6 @@ export const BorrowService = {
 
       const { title, available_count } = bookData[0];
 
-      // Only check truly AVAILABLE copies (not held by others)
       if (item.quantity > available_count) {
         errors.push({
           book_id: item.book_id,
@@ -74,17 +68,6 @@ export const BorrowService = {
     };
   },
 
-  /**
-   * Create borrow request (PENDING) and reserve books
-   * User gets a ticket to present at library
-   * Books are marked as RESERVED (soft lock for limited time)
-   *
-   * Flow:
-   * 1. User checkout → Create PENDING borrow + RESERVE books
-   * 2. User comes to library with ticket
-   * 3. Librarian scans ticket → Verify + Hand over books
-   * 4. System updates: borrow → ACTIVE, books → BORROWED
-   */
   async createBorrowFromCart(
     userId: string,
     items: CreateBorrowItem[]
@@ -94,7 +77,6 @@ export const BorrowService = {
     try {
       await conn.beginTransaction();
 
-      // Step 1: Validate availability (CRITICAL - prevents race condition)
       const validation = await this.validateCartAvailability(items);
 
       if (!validation.success) {
@@ -105,8 +87,6 @@ export const BorrowService = {
         };
       }
 
-      // Step 2: Create PENDING borrow record (ticket)
-      // due_date = 14 days from borrow_date (when librarian confirms)
       const insertBorrowQuery = `
         INSERT INTO borrows (
           user_id, 
@@ -122,11 +102,9 @@ export const BorrowService = {
       const [borrowResult] = await conn.query(insertBorrowQuery, [userId]);
       const borrowId = (borrowResult as any).insertId;
 
-      // Step 3: Reserve books and create borrow_details
       const reservedCopies = [];
 
       for (const item of items) {
-        // Get available book copies (FIFO - oldest available first)
         const getAvailableCopiesQuery = `
           SELECT bc.id, b.title
           FROM book_copies bc
@@ -134,6 +112,7 @@ export const BorrowService = {
           WHERE bc.book_id = ? AND bc.status = 'AVAILABLE'
           ORDER BY bc.created_at ASC
           LIMIT ?
+          FOR UPDATE
         `;
 
         const [copies] = await conn.query(getAvailableCopiesQuery, [
@@ -143,22 +122,18 @@ export const BorrowService = {
         const availableCopies = copies as any[];
 
         if (availableCopies.length < item.quantity) {
-          // Race condition - someone else took it
           throw new Error(
             `Race condition: Not enough copies for book ${item.book_id}`
           );
         }
 
-        // Reserve each copy and create borrow detail
         for (const copy of availableCopies) {
-          // Create borrow detail (links borrow to specific copy)
           const insertDetailQuery = `
             INSERT INTO borrow_details (borrow_id, copy_id)
             VALUES (?, ?)
           `;
           await conn.query(insertDetailQuery, [borrowId, copy.id]);
 
-          // RESERVE the copy (soft lock - not yet borrowed)
           const updateCopyQuery = `
             UPDATE book_copies
             SET status = 'RESERVED', updated_at = NOW()
@@ -173,13 +148,11 @@ export const BorrowService = {
         }
       }
 
-      // Step 4: Clear user's cart
       const clearCartQuery = `DELETE FROM borrow_carts WHERE user_id = ?`;
       await conn.query(clearCartQuery, [userId]);
 
       await conn.commit();
 
-      // Return ticket information
       return {
         success: true,
         message: "Đặt sách thành công! Vui lòng đến thư viện để nhận sách.",

@@ -24,11 +24,6 @@ router.patch(
   adminController.updateSystemSettingsController
 );
 
-// ❌ REMOVED CACHE: User list changes frequently
-// - New user registrations
-// - Profile updates (avatar, name, etc.)
-// - User deletions
-// Admin should see real-time data
 router.get(
   "/",
   authMiddleware,
@@ -46,7 +41,6 @@ router.post(
   adminController.adminCreateUserController
 );
 
-// ❌ REMOVED CACHE: User detail changes frequently
 router.get(
   "/:user_id",
   authMiddleware,

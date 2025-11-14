@@ -15,11 +15,6 @@ import {
 
 const settingsAdminRoutes = Router();
 
-/**
- * Admin routes - require authentication and ADMIN role
- */
-
-// GET all settings - đặt trước /:key
 settingsAdminRoutes.get(
   "/",
   authMiddleware,
@@ -28,7 +23,6 @@ settingsAdminRoutes.get(
   getAllSettingsController
 );
 
-// GET a setting by key - cache 10 phút
 settingsAdminRoutes.get(
   "/:key",
   authMiddleware,
@@ -37,7 +31,6 @@ settingsAdminRoutes.get(
   getSettingController
 );
 
-// PUT update a setting by key
 settingsAdminRoutes.put(
   "/:key",
   authMiddleware,
@@ -46,7 +39,6 @@ settingsAdminRoutes.put(
   updateSettingController
 );
 
-// PATCH toggle a boolean setting by key
 settingsAdminRoutes.patch(
   "/:key/toggle",
   authMiddleware,
@@ -55,7 +47,6 @@ settingsAdminRoutes.patch(
   toggleSettingController
 );
 
-// DELETE a setting by key
 settingsAdminRoutes.delete(
   "/:key",
   authMiddleware,

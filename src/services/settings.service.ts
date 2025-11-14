@@ -3,9 +3,6 @@ import { settingsModel } from "../models/index.ts";
 import { v4 as uuidv4 } from "uuid";
 
 export class SettingsService {
-  /**
-   * Get a setting by setting_key from system_settings table
-   */
   static async getSettingByKey(
     key: string
   ): Promise<settingsModel.SystemSetting | null> {
@@ -23,9 +20,6 @@ export class SettingsService {
     }
   }
 
-  /**
-   * Get all settings
-   */
   static async getAllSettings(): Promise<settingsModel.SystemSetting[]> {
     try {
       const [rows] = await connection.execute(
@@ -38,9 +32,6 @@ export class SettingsService {
     }
   }
 
-  /**
-   * Create a new setting
-   */
   static async createSetting(
     input: settingsModel.CreateSettingInput
   ): Promise<settingsModel.SystemSetting> {
@@ -67,9 +58,6 @@ export class SettingsService {
     }
   }
 
-  /**
-   * Update a setting by key
-   */
   static async updateSettingByKey(
     key: string,
     input: settingsModel.UpdateSettingInput
@@ -105,9 +93,6 @@ export class SettingsService {
     }
   }
 
-  /**
-   * Delete a setting by key
-   */
   static async deleteSettingByKey(key: string): Promise<boolean> {
     try {
       const [result] = await connection.execute(
@@ -122,9 +107,6 @@ export class SettingsService {
     }
   }
 
-  /**
-   * Toggle a boolean setting (for convenience)
-   */
   static async toggleBooleanSetting(key: string): Promise<boolean> {
     try {
       const current = await this.getSettingByKey(key);

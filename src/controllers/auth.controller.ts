@@ -29,7 +29,7 @@ import type { ApiError, AuthRequest } from "../types/errors.ts";
 import { authService } from "../services/auth.service.ts";
 import { verificationService } from "../services/verification.service.ts";
 import userServices from "../services/user.service.ts";
-import { hashPassword } from "../utils/password.ts";
+import { hashPassword, verifyPassword } from "../utils/password.ts";
 import {
   refreshTokenController,
   logoutController,
@@ -75,16 +75,14 @@ export const loginController = async (req: Request, res: Response) => {
 
     const result = await authService.login(identifier, password);
 
-    // CRITICAL: FORCE clear old refresh token cookie by setting maxAge=0
     res.cookie("refreshToken", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 0, // Expire immediately
+      maxAge: 0,
       path: "/",
     });
 
-    // Set NEW refresh token as httpOnly cookie (secure, cannot be accessed by JS)
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -93,7 +91,6 @@ export const loginController = async (req: Request, res: Response) => {
       path: "/",
     });
 
-    // Return access token + user info (NO refresh token in response body for security)
     res.status(200).json({
       user: result.user,
       accessToken: result.accessToken,
@@ -108,7 +105,6 @@ export const loginController = async (req: Request, res: Response) => {
   }
 };
 
-// Export token controllers for use in routes
 export { refreshTokenController, logoutController };
 
 // quên mật khẩu controller
@@ -207,6 +203,14 @@ export const verifyChangePasswordController = async (
     const found = await userServices.getUserById(user.id);
     if (!found)
       return res.status(404).json({ message: "Không tìm thấy người dùng." });
+
+    const isOldPasswordValid = await verifyPassword(
+      old_password,
+      found.password
+    );
+    if (!isOldPasswordValid) {
+      return res.status(400).json({ message: "Mật khẩu hiện tại không đúng." });
+    }
 
     // đổi mật khẩu
     const hashed = await hashPassword(new_password);

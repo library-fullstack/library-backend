@@ -9,7 +9,6 @@ export const snakeToCamel = (obj: unknown): unknown => {
         );
         const value = (obj as Record<string, unknown>)[key];
 
-        // Handle Date objects from MySQL - keep as-is
         if (value instanceof Date) {
           result[camelKey] = value;
         } else if (value !== null && typeof value === "object") {
@@ -25,19 +24,14 @@ export const snakeToCamel = (obj: unknown): unknown => {
   return obj;
 };
 
-/**
- * Format ISO date string to YYYY-MM-DD
- */
 const formatDateForSQL = (value: unknown): string => {
   if (value instanceof Date) {
     return value.toISOString().split("T")[0];
   }
   if (typeof value === "string") {
-    // Already YYYY-MM-DD format
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
       return value;
     }
-    // ISO format with time (e.g., 2026-01-31T17:00:00.000Z)
     if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
       return value.split("T")[0];
     }
@@ -57,7 +51,6 @@ export const camelToSnake = (obj: unknown): unknown => {
         );
         const value = (obj as Record<string, unknown>)[key];
 
-        // Handle date fields - format to YYYY-MM-DD
         if (
           (snakeKey === "start_date" || snakeKey === "end_date") &&
           value !== null &&

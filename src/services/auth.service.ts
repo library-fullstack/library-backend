@@ -18,9 +18,6 @@ import { sendMail } from "../utils/mailer.ts";
 import crypto from "crypto";
 import { cache } from "../config/redis.ts";
 
-// OPTIMIZED: Moved to Redis for multi-instance deployment support
-// No longer using in-memory Map which doesn't work across multiple servers
-
 const register = async (user: userModel.StudentRegisterInput) => {
   if (!user.student_id) throw new Error("Mã sinh viên là bắt buộc.");
 
@@ -53,7 +50,7 @@ const register = async (user: userModel.StudentRegisterInput) => {
       student_id: student.student_id || "",
       expires: Date.now() + 5 * 60 * 1000,
     },
-    300 // 5 minutes TTL
+    300
   );
 
   // kiểm tra cấu hình admin đang set
@@ -137,9 +134,7 @@ const login = async (
   }
 
   //  lấy thông tin sinh viên đó dựa vào bảng students (cơ sở dữ liệu của trường)
-  //  tuy nhiên vấn đề bây giờ là cái bảng student này nếu mà lấy dữ liệu ra thì rất phiền
-  //  bởi vì phải join bảng...
-  //  quá phức tạp ...
+
   const [rows] = await connection.query<any[]>(
     `
     SELECT 
@@ -168,11 +163,8 @@ const login = async (
     throw new Error("Không thể lấy thông tin người dùng.");
   }
 
-  // CRITICAL: Revoke all existing refresh tokens for this user BEFORE creating new one
-  // This prevents old sessions from being valid after login
   await revokeAllRefreshTokens(user.id);
 
-  // Generate tokens
   const payload = {
     userId: user.id,
     email: user.email,
@@ -187,8 +179,7 @@ const login = async (
   const accessToken = generateAccessToken(payload);
   const refreshToken = generateRefreshToken(payload);
 
-  // Store refresh token in database
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   await storeRefreshToken(user.id, refreshToken, expiresAt);
 
   // cuối cùng trả về sinh viên đó kèm theo tokens
@@ -207,8 +198,13 @@ export const forgotPassword = async (email: string) => {
   );
 
   const user = users[0];
+
   if (!user) {
-    throw new Error("Email không tồn tại trong hệ thống.");
+    console.log("[Forgot Password] Email not found:", email);
+    return {
+      message:
+        "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu đã được gửi tới email của bạn. Vui lòng kiểm tra hộp thư.",
+    };
   }
 
   // tạo token trong 15 phút
@@ -244,7 +240,7 @@ export const forgotPassword = async (email: string) => {
 
   return {
     message:
-      "Liên kết đặt lại mật khẩu đã được gửi tới email của bạn. Nếu không thấy thư, vui lòng kiểm tra phần thư rác.",
+      "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu đã được gửi tới email của bạn. Vui lòng kiểm tra hộp thư.",
   };
 };
 

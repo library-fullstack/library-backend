@@ -4,30 +4,34 @@ import adminServices from "../services/admin.service.ts";
 import { userModel } from "../models/index.ts";
 import adminService from "../services/admin.service.ts";
 
-// get all user
 const adminGetAllUserController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
     const { page = 1, limit = 10 } = req.query;
-    const users = await adminServices.adminGetAllUser();
+    const pageNum = Math.max(1, Number(page));
+    const limitNum = Math.min(100, Math.max(1, Number(limit)));
 
-    if (!users) {
-      res.status(404).json({ message: "Không tìm thấy người dùng" });
+    const result = await adminServices.adminGetAllUser(pageNum, limitNum);
+
+    if (!result.users || result.users.length === 0) {
+      res.status(200).json({
+        users: [],
+        total: 0,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: 0,
+      });
       return;
     }
 
-    // Paginate manually
-    const pageNum = Number(page);
-    const limitNum = Number(limit);
-    const start = (pageNum - 1) * limitNum;
-    const end = start + limitNum;
-    const paginatedUsers = users.slice(start, end);
-
     res.json({
-      users: paginatedUsers,
-      total: users.length,
+      users: result.users,
+      total: result.total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(result.total / limitNum),
     });
   } catch (error) {
     const err = error as ApiError;

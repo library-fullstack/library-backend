@@ -9,7 +9,6 @@ import * as controller from "../../controllers/book/bookAuthor.controller.ts";
 
 const router = express.Router();
 
-// Cache authors by book 10 phút
 router.get(
   "/:bookId",
   cacheMiddleware(600, "authors"),

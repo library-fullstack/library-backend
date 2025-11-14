@@ -17,4 +17,4 @@ async function rewriteImports(dir) {
 }
 
 await rewriteImports(new URL("../dist", import.meta.url).pathname);
-console.log("Fixed imports (.ts → .js) in dist/");
+console.log("Fixed imports (.ts -> .js) in dist/");

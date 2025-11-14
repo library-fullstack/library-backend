@@ -1,14 +1,17 @@
 import connection from "../config/db.ts";
 import { userModel } from "../models/index.ts";
 import { v4 as uuidv4 } from "uuid";
-// mã hoá password
 import { hashPassword } from "../utils/password.ts";
 
-// lấy hết thông tin cả tất cả người dùng
-const adminGetAllUser = async (): Promise<userModel.User[] | null> => {
+const adminGetAllUser = async (
+  page: number = 1,
+  limit: number = 10
+): Promise<{ users: userModel.User[]; total: number }> => {
+  const offset = (page - 1) * limit;
+
   const [rows] = await connection.query<any[]>(
     `
-    SELECT 
+    SELECT
       u.id,
       u.student_id,
       u.full_name,
@@ -25,10 +28,17 @@ const adminGetAllUser = async (): Promise<userModel.User[] | null> => {
     FROM users u
     LEFT JOIN students s ON s.student_id = u.student_id
     ORDER BY u.created_at DESC
-    `
+    LIMIT ? OFFSET ?
+    `,
+    [limit, offset]
   );
 
-  return rows;
+  const [countResult] = await connection.query<any[]>(
+    `SELECT COUNT(*) as total FROM users`
+  );
+  const total = countResult[0]?.total || 0;
+
+  return { users: rows, total };
 };
 
 // lấy thông tin của người dùng theo id
@@ -47,8 +57,7 @@ const adminCreateUser = async (
   user: userModel.AdminCreateUserInput
 ): Promise<void> => {
   // nếu thiếu thông tin cần thiết thì không cho tạo
-  // hiện tại đang bị xung đột với bảng students
-  // đcm thằng nào nghĩ ra cái bảng student này vậy clm
+
   if (!user.full_name || !user.password || !user.role) {
     throw new Error(
       "Thiếu thông tin bắt buộc (full_name, email, password, role)"
