@@ -8,3 +8,6 @@ export * as bookTagModel from "./book/bookTag.model.ts";
 // export * as bookCopyModel from "./bookCopy.model.ts";
 export * as borrowModel from "./borrow.model.ts";
 export * as borrowDetailModel from "./borrowDetail.model.ts";
+export * as borrowCartModel from "./borrowCart.model.ts";
+export * as bannerModel from "./banner.model.ts";
+export * as settingsModel from "./settings.model.ts";

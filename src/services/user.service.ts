@@ -3,6 +3,7 @@ import { userModel } from "../models/index.ts";
 import { v4 as uuidv4 } from "uuid";
 // mã hoá password
 import { verifyPassword, hashPassword } from "../utils/password.ts";
+import { cache } from "../config/redis.ts";
 
 // get user bằng id
 const getUserById = async (user_id: string) => {
@@ -186,6 +187,58 @@ const changePasswordWithOtp = async (
   return { message: "Đổi mật khẩu thành công." };
 };
 
+export const confirmStudentInfo = async (data: {
+  token: string;
+  full_name: string;
+  email: string;
+  phone: string;
+}) => {
+  if (!data.token) throw new Error("Thiếu token xác nhận.");
+
+  const cacheKey = `register:${data.token}`;
+  const cachedData = await cache.get<{
+    hashed: string;
+    student_id: string;
+    expires: number;
+  }>(cacheKey);
+
+  if (!cachedData) throw new Error("Token không hợp lệ hoặc đã hết hạn.");
+
+  if (Date.now() > cachedData.expires) {
+    await cache.del(cacheKey);
+    throw new Error("Token đã hết hạn, vui lòng đăng ký lại.");
+  }
+
+  const existUser = await getUserByStudentId(cachedData.student_id);
+  if (existUser) throw new Error("Tài khoản đã được tạo trước đó.");
+
+  const name = data.full_name?.trim();
+  if (!name || !/^[A-Za-zÀ-ỹ\s]{3,50}$/.test(name)) {
+    throw new Error("Tên không hợp lệ.");
+  }
+
+  const email = data.email?.trim();
+  if (!/^[\w.-]+@[\w.-]+\.\w+$/.test(email)) {
+    throw new Error("Email không hợp lệ.");
+  }
+
+  const phone = data.phone?.trim();
+  if (!/^0\d{9}$/.test(phone)) {
+    throw new Error("Số điện thoại không hợp lệ.");
+  }
+
+  await connection.query(
+    `
+    INSERT INTO users (id, student_id, full_name, email, phone, password, role, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'STUDENT', 'ACTIVE')
+    `,
+    [uuidv4(), cachedData.student_id, name, email, phone, cachedData.hashed]
+  );
+
+  await cache.del(cacheKey);
+  return { message: "Đăng ký hoàn tất thành công." };
+};
+
 // xuất phát hết luôn
 const userServices = {
   createUser,
@@ -195,6 +248,7 @@ const userServices = {
   getUserByStudentId,
   checkCurrentPassword,
   changePasswordWithOtp,
+  confirmStudentInfo,
 };
 
 export default userServices;

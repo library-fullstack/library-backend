@@ -1,75 +1,111 @@
 import { userModel } from "../models/index.ts";
 import userServices from "./user.service.ts";
 import { signToken } from "../utils/jwt.ts";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  storeRefreshToken,
+  verifyRefreshTokenExists,
+  revokeRefreshToken,
+  revokeAllRefreshTokens,
+} from "../utils/token.ts";
 import { verifyPassword, hashPassword } from "../utils/password.ts";
 import { sendPasswordResetEmail } from "../utils/emailTemplates.ts";
 import connection from "../config/db.ts";
 import { requireEnv } from "../config/env.ts";
 import { v4 as uuidv4 } from "uuid";
 import { sendMail } from "../utils/mailer.ts";
+import crypto from "crypto";
+import { cache } from "../config/redis.ts";
 
-// đăng ký
-const register = async (
-  user: userModel.StudentRegisterInput
-): Promise<{ message: string }> => {
-  // kiểm tra mã sinh viên có tồn tại hay không
-  // mã sinh phải có để tiếp tục vì phạm vi của dự án là trường học
-  // chỉ có sinh viên trong trường học mới có thể đăng ký
-  if (!user.student_id) {
-    throw new Error("Mã sinh viên là bắt buộc khi đăng ký.");
-  }
+// OPTIMIZED: Moved to Redis for multi-instance deployment support
+// No longer using in-memory Map which doesn't work across multiple servers
 
-  // lấy dữ liệu của sinh viên có mã sinh viên được dùng để đang ký
+const register = async (user: userModel.StudentRegisterInput) => {
+  if (!user.student_id) throw new Error("Mã sinh viên là bắt buộc.");
+
   const [students] = await connection.query<userModel.User[]>(
-    `SELECT student_id, full_name, email, phone 
-     FROM students WHERE student_id = ? AND status = 'ACTIVE' LIMIT 1`,
+    `SELECT student_id, full_name, email, phone
+     FROM students
+     WHERE student_id = ? AND status = 'ACTIVE'
+     LIMIT 1`,
     [user.student_id]
   );
 
-  // kiểm tra xem khi query với student_id thì có dữ liệu của sinh viên đó trả về hay không
-  // nếu không có thì 1 là sinh viên đó bị BAN / INACTIVE hoặc mã sinh viên bị sai và sinh
-  // viên đó không phải là sinh viên của trường
   const student = students[0];
   if (!student) {
-    throw new Error(
-      "Mã sinh viên không tồn tại trong hệ thống hoặc đã ngừng hoạt động."
-    );
+    throw new Error("Mã sinh viên không tồn tại hoặc đã ngừng hoạt động.");
   }
 
-  // có trong cơ sở dữ liệu rồi thì tức là sinh viên này đã từng đăng ký tài khoản thư viện rồi
   const existUser = await userServices.getUserByStudentId(user.student_id);
-  if (existUser) {
-    throw new Error("Tài khoản đã được đăng ký trước đó.");
-  }
+  if (existUser) throw new Error("Tài khoản đã được đăng ký trước đó.");
 
-  // mã hoá mật khẩu
+  // hash mật khẩu
   const hashed = await hashPassword(user.password);
 
-  // query thêm sinh viên vào cơ sở dữ liệu của thư viện
-  await connection.query(
-    `
-    INSERT INTO users (id, student_id, full_name, email, phone, password, role, status)
-    VALUES (?, ?, ?, ?, ?, ?, 'STUDENT', 'ACTIVE')
-    `,
-    [
-      uuidv4(), // id của người dùng đã được random với UUID
-      student.student_id,
-      student.full_name,
-      student.email,
-      student.phone,
+  // tạo token tạm thời và lưu vào Redis
+  const token = crypto.randomBytes(32).toString("hex");
+  const cacheKey = `register:${token}`;
+  await cache.set(
+    cacheKey,
+    {
       hashed,
-    ]
+      student_id: student.student_id || "",
+      expires: Date.now() + 5 * 60 * 1000,
+    },
+    300 // 5 minutes TTL
   );
 
-  // trả về message ở API
-  return { message: "Đăng ký thành công. Bạn có thể đăng nhập ngay." };
+  // kiểm tra cấu hình admin đang set
+  const [settings] = await connection.query<any[]>(
+    "SELECT setting_value FROM system_settings WHERE setting_key = 'allow_student_info_edit' LIMIT 1"
+  );
+  const settingValue = settings[0]?.setting_value;
+  const allowEdit =
+    settingValue === "1" || settingValue === "true" || settingValue === true;
+
+  // nếu allowEdit = false, tạo user ngay
+  if (!allowEdit) {
+    await connection.query(
+      `
+      INSERT INTO users (id, student_id, full_name, email, phone, password, role, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'STUDENT', 'ACTIVE')
+      `,
+      [
+        uuidv4(),
+        student.student_id,
+        student.full_name,
+        student.email,
+        student.phone,
+        hashed,
+      ]
+    );
+
+    return {
+      message: "Đăng ký thành công!",
+      require_info_confirm: false,
+    };
+  }
+
+  // nếu allowEdit = true, trả về token để confirm
+  return {
+    message: "Xác nhận thông tin trước khi hoàn tất đăng ký.",
+    require_info_confirm: true,
+    token: token,
+    user_preview: {
+      student_id: student.student_id,
+      full_name: student.full_name,
+      email: student.email,
+      phone: student.phone,
+    },
+  };
 };
 
 // đăng nhập
 const login = async (
-  identifier: string, // ủa bên front-end để là student_id thì nếu admin đăng nhập thì đăng nhập kiểu gì nhỉ ?
+  identifier: string,
   password: string
-): Promise<{ user: any; accessToken: string }> => {
+): Promise<{ user: any; accessToken: string; refreshToken: string }> => {
   // query email OR student_id (một lần, có index) để kiểm tra tài khoản
   const [userRows] = await connection.query<any[]>(
     `SELECT * FROM users WHERE email = ? OR student_id = ? LIMIT 1`,
@@ -99,13 +135,6 @@ const login = async (
         : "Tài khoản của bạn chưa được kích hoạt hoặc đang bị tạm khóa.";
     throw new Error(msg);
   }
-
-  // lấy token jwt để xác minh đăng nhập
-  const token = signToken({
-    id: user.id,
-    role: user.role,
-    email: user.email, // thêm luôn email vào token để dễ check
-  });
 
   //  lấy thông tin sinh viên đó dựa vào bảng students (cơ sở dữ liệu của trường)
   //  tuy nhiên vấn đề bây giờ là cái bảng student này nếu mà lấy dữ liệu ra thì rất phiền
@@ -139,79 +168,37 @@ const login = async (
     throw new Error("Không thể lấy thông tin người dùng.");
   }
 
-  // cuối cùng trả về sinh viên đó kèm theo token
-  return { user: fullUser, accessToken: token };
+  // CRITICAL: Revoke all existing refresh tokens for this user BEFORE creating new one
+  // This prevents old sessions from being valid after login
+  await revokeAllRefreshTokens(user.id);
+
+  // Generate tokens
+  const payload = {
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+  };
+
+  console.log("[auth.service] Creating tokens for user:", {
+    userId: user.id,
+    email: user.email,
+  });
+
+  const accessToken = generateAccessToken(payload);
+  const refreshToken = generateRefreshToken(payload);
+
+  // Store refresh token in database
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  await storeRefreshToken(user.id, refreshToken, expiresAt);
+
+  // cuối cùng trả về sinh viên đó kèm theo tokens
+  return { user: fullUser, accessToken, refreshToken };
 };
 
 // tạo cái mã OTP 6 số
 const generateCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
-
-// quên mật khẩu
-// export const forgotPassword = async (identifier: string, channel = "EMAIL") => {
-//   // check mail của user đang qua quên mật khẩu xem có tồn tại không.
-//   const [users] = await connection.query<userModel.User[]>(
-//     "SELECT id, full_name, email, phone FROM users WHERE email = ?",
-//     [identifier]
-//   );
-
-//   // không tồn tại thì không báo là không tồn tại, mà chỉ báo một nửa thông tin.
-//   // người khôn ăn nói nửa chừng
-//   const user = users[0];
-//   // if (!user) {
-//   //   return { message: "Nếu tài khoản tồn tại, mã khôi phục đã được gửi." };
-//   // }
-//   // hoặc ?
-//   if (!user) {
-//     throw new Error("Email không tồn tại trong hệ thống.");
-//   }
-
-//   // tạo mã OTP xác minh từ hàm tạo mã OTP
-//   const code = generateCode();
-//   // thời gian hết hạn có mã OTP đó
-//   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-//   // thêm vào bảng xác minh người dùng (lưu tạm)
-//   await connection.query(
-//     `INSERT INTO user_verifications (id, user_id, vtype, channel, code, expires_at)
-//      VALUES (?, ?, 'PASSWORD_RESET', ?, ?, ?)`,
-//     [uuidv4(), user.id, channel, code, expiresAt]
-//   );
-
-//   // subject của mail gửi đến email của người dùng
-//   const subject = "Mã khôi phục mật khẩu - UNETI Library";
-//   // phần thân của mail sẽ có mã OTP
-//   const html = `
-//     <p>Xin chào <b>${user.full_name || "bạn"}</b>,</p>
-//     <p>Mã OTP khôi phục mật khẩu của bạn là: <b>${code}</b></p>
-//     <p>Mã sẽ hết hạn sau 10 phút.</p>
-//   `;
-
-//   // tạo mã xác minh và gửi SMS về số điện thoại đã đăng ký.
-//   // CHƯA LÀM XÁC MINH QUA SỐ ĐIỆN THOẠI
-//   const smsText = `Mã OTP khôi phục mật khẩu của bạn là: ${code}. Mã sẽ hết hạn sau 10 phút.`;
-
-//   // kiểm tra xem cách xác minh là qua email hay qua SMS hay là chơi cả hai
-//   try {
-//     if (channel === "EMAIL" && user.email) {
-//       await sendMail(user.email, subject, html);
-//     } else if (channel === "SMS" && user.phone) {
-//       await sendSMS(user.phone, smsText);
-//     } else if (channel === "BOTH") {
-//       if (user.email) await sendMail(user.email, subject, html);
-//       if (user.phone) await sendSMS(user.phone, smsText);
-//     } else {
-//       console.warn(`[WARN] Không thể gửi OTP, user không có email hoặc phone`);
-//     }
-//   } catch (err) {
-//     console.error("[OTP Send Error]", err);
-//     throw new Error("Không thể gửi mã OTP, vui lòng thử lại.");
-//   }
-
-//   // trả về message API
-//   return { message: "Mã khôi phục mật khẩu đã được gửi." };
-// };
 
 export const forgotPassword = async (email: string) => {
   const [users] = await connection.query<userModel.User[]>(

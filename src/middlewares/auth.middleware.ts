@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { env } from "../config/env.ts";
+import { verifyAccessToken } from "../utils/token.ts";
 import * as jwt from "jsonwebtoken";
 
 const jwtLib = jwt.default || jwt;
@@ -18,19 +19,30 @@ export const authMiddleware = (
   const token = header.split(" ")[1];
 
   try {
-    const decoded = jwtLib.verify(token, env.JWT_SECRET) as {
-      id: string;
-      role: string;
-      email: string;
-    };
+    // Use new token verification with refresh support
+    const decoded = verifyAccessToken(token);
 
-    (req as any).user = decoded;
+    if (!decoded) {
+      // Token invalid or expired
+      // Client should catch 401 and call /auth/refresh to get new token
+      return res.status(401).json({
+        message: "Token hết hạn hoặc không hợp lệ",
+        code: "TOKEN_EXPIRED",
+      });
+    }
+
+    (req as any).user = {
+      id: decoded.userId,
+      email: decoded.email,
+      role: decoded.role,
+    };
 
     next();
   } catch (err: any) {
-    if (err.name === "TokenExpiredError") {
-      return res.status(401).json({ message: "Phiên đăng nhập đã hết hạn" });
-    }
-    res.status(401).json({ message: "Token không hợp lệ" });
+    console.error("[AuthMiddleware] Error:", err);
+    res.status(401).json({
+      message: "Token không hợp lệ",
+      code: "INVALID_TOKEN",
+    });
   }
 };

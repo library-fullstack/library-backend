@@ -6,8 +6,26 @@ import { hashPassword } from "../utils/password.ts";
 
 // lấy hết thông tin cả tất cả người dùng
 const adminGetAllUser = async (): Promise<userModel.User[] | null> => {
-  const [rows] = await connection.query<userModel.User[]>(
-    "SELECT * FROM users"
+  const [rows] = await connection.query<any[]>(
+    `
+    SELECT 
+      u.id,
+      u.student_id,
+      u.full_name,
+      u.email,
+      u.phone,
+      u.role,
+      u.status,
+      u.avatar_url,
+      u.created_at,
+      s.class_name,
+      s.faculty,
+      s.major,
+      s.admission_year
+    FROM users u
+    LEFT JOIN students s ON s.student_id = u.student_id
+    ORDER BY u.created_at DESC
+    `
   );
 
   return rows;
@@ -170,6 +188,59 @@ const adminDeleteUserById = async (user_id: string): Promise<void> => {
   await connection.query("DELETE FROM users WHERE id = ?", [user_id]);
 };
 
+// cho phép user sửa thông tin
+const getAllowStudentInfoEdit = async (): Promise<boolean> => {
+  const [rows] = await connection.query(
+    "SELECT setting_value FROM system_settings WHERE setting_key = 'allow_student_info_edit' LIMIT 1"
+  );
+
+  if ((rows as any).length === 0) {
+    const { v4: uuidv4 } = await import("uuid");
+    await connection.query(
+      "INSERT INTO system_settings (id, setting_key, setting_value, description) VALUES (?, ?, ?, ?)",
+      [
+        uuidv4(),
+        "allow_student_info_edit",
+        "0",
+        "Cho phép sinh viên chỉnh sửa thông tin sau khi đăng ký",
+      ]
+    );
+    return false;
+  }
+
+  const value = (rows as any)[0]?.setting_value;
+  return value === "1" || value === "true" || value === true;
+};
+
+const updateAllowStudentInfoEdit = async (
+  allow: number | boolean
+): Promise<void> => {
+  const value = allow === true || allow === 1 ? "1" : "0";
+
+  // Kiểm tra xem có dòng nào chưa
+  const [rows] = await connection.query(
+    "SELECT id FROM system_settings WHERE setting_key = 'allow_student_info_edit' LIMIT 1"
+  );
+
+  if ((rows as any).length === 0) {
+    const { v4: uuidv4 } = await import("uuid");
+    await connection.query(
+      "INSERT INTO system_settings (id, setting_key, setting_value, description) VALUES (?, ?, ?, ?)",
+      [
+        uuidv4(),
+        "allow_student_info_edit",
+        value,
+        "Cho phép sinh viên chỉnh sửa thông tin sau khi đăng ký",
+      ]
+    );
+  } else {
+    await connection.query(
+      "UPDATE system_settings SET setting_value = ? WHERE setting_key = 'allow_student_info_edit'",
+      [value]
+    );
+  }
+};
+
 // xuất tất cả
 const adminServices = {
   adminGetAllUser,
@@ -177,6 +248,8 @@ const adminServices = {
   adminCreateUser,
   adminUpdateUserById,
   adminDeleteUserById,
+  getAllowStudentInfoEdit,
+  updateAllowStudentInfoEdit,
 };
 
 export default adminServices;
