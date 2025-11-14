@@ -10,7 +10,6 @@ const uploadToCloudinary = async (
     console.log(`[Cloudinary] Starting upload for file: ${filePath}`);
     console.log(`[Cloudinary] Target folder: ${folder}`);
 
-    // Kiểm tra xem file có tồn tại không
     if (!fs.existsSync(filePath)) {
       throw new Error(`File không tồn tại: ${filePath}`);
     }
@@ -36,7 +35,6 @@ const uploadToCloudinary = async (
   } catch (err) {
     console.error("[uploadToCloudinary] Error:", err);
 
-    // Cleanup file nếu upload thất bại
     try {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);

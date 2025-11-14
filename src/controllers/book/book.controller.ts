@@ -28,15 +28,27 @@ const getAllBooksController = async (
       return;
     }
 
+    // Xác nhận searchType param
+    const searchType = (req.query.searchType || "all") as string;
+    const validSearchTypes = ["all", "author", "title", "publisher"];
+    if (!validSearchTypes.includes(searchType)) {
+      res.status(400).json({
+        message: `Invalid searchType value. Allowed: all, author, title, publisher`,
+      });
+      return;
+    }
+
     const filters = {
       keyword: req.query.keyword as string,
-      categoryId: req.query.categoryId
-        ? Number(req.query.categoryId)
+      categoryId: req.query.category_id
+        ? Number(req.query.category_id)
         : undefined,
       status: req.query.status as string,
+      searchType: searchType as "all" | "author" | "title" | "publisher",
       sortBy: isValidBookSort(sortBy) ? sortBy : undefined,
-      limit: req.query.limit ? Number(req.query.limit) : undefined,
-      offset: req.query.offset ? Number(req.query.offset) : undefined,
+      limit: req.query.limit ? Number(req.query.limit) : 12,
+      offset: req.query.offset ? Number(req.query.offset) : 0,
+      cursor: req.query.cursor ? Number(req.query.cursor) : undefined,
     };
 
     const books = await getAllBooks(filters);

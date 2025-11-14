@@ -6,32 +6,56 @@ import {
   forgotPasswordController,
   resetPasswordController,
   sendOtpController,
+  refreshTokenController,
+  logoutController,
 } from "../controllers/auth.controller.ts";
 import { authMiddleware } from "../middlewares/auth.middleware.ts";
 import { verifyChangePasswordController } from "../controllers/auth.controller.ts";
+import { secureCacheMiddleware } from "../middlewares/secure-cache.middleware.ts";
 
 const router = express.Router();
 
-// đăng ký
-router.post("/register", validate("createUser"), registerController);
+// đăng ký - no-cache for security
+router.post(
+  "/register",
+  secureCacheMiddleware,
+  validate("createUser"),
+  registerController
+);
 
-// đăng nhập
-router.post("/login", validate("login"), loginController);
+// đăng nhập - no-cache for security
+router.post(
+  "/login",
+  secureCacheMiddleware,
+  validate("login"),
+  loginController
+);
 
-// quên mật khẩu
+router.post("/refresh", secureCacheMiddleware, refreshTokenController);
+
+router.post("/logout", secureCacheMiddleware, logoutController);
+
+// quên mật khẩu - no-cache for security
 router.post(
   "/forgot-password",
+  secureCacheMiddleware,
   validate("forgotPassword"),
   forgotPasswordController
 );
 
-// đổi mật khẩu
+// đổi mật khẩu - no-cache for security
 router.post(
   "/reset-password",
+  secureCacheMiddleware,
   validate("resetPassword"),
   resetPasswordController
 );
 
-router.post("/send-otp", authMiddleware, sendOtpController);
+router.post(
+  "/send-otp",
+  secureCacheMiddleware,
+  authMiddleware,
+  sendOtpController
+);
 
 export default router;

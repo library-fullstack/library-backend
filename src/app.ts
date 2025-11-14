@@ -2,19 +2,50 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import compression from "compression";
+import cookieParser from "cookie-parser";
 import { env } from "./config/env.ts";
 import { errorMiddleware } from "./middlewares/error.middleware.ts";
+import { standardRateLimit } from "./middlewares/rate-limit.middleware.ts";
+import { performanceMiddleware } from "./middlewares/performance.middleware.ts";
 import router from "./routes/index.ts";
 
 const app = express();
 
-app.use(express.json());
+app.use(performanceMiddleware);
+
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+
+app.use(cookieParser());
+
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
+    contentSecurityPolicy: env.NODE_ENV === "production" ? undefined : false,
   })
 );
+
+app.use(
+  compression({
+    filter: (req, res) => {
+      if (req.headers["x-no-compression"]) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+    level: 6,
+  })
+);
+
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
+
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return next();
+  }
+  standardRateLimit(req, res, next);
+});
 
 const allowedOrigins = env.FRONTEND_ORIGINS;
 
@@ -26,17 +57,19 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) {
-        console.log("CORS: Cho phép yêu cầu khi không có tên miền");
+        if (process.env.NODE_ENV === "production") {
+          console.log("CORS: Rejecting request without origin in production");
+          return callback(new Error("Origin header required in production"));
+        }
+        console.log("CORS: Cho phép yêu cầu khi không có tên miền (dev mode)");
         return callback(null, true);
       }
 
-      // lấy cors từ env
       if (allowedOrigins.includes(origin)) {
         console.log("CORS: Cho phép tiền miền từ whitelist:", origin);
         return callback(null, true);
       }
 
-      // cho phép all LAN và public IP
       const isLAN =
         /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) ||
         /^http:\/\/172\.\d+\.\d+\.\d+(:\d+)?$/.test(origin) ||

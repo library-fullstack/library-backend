@@ -25,6 +25,7 @@ type Env = {
   JWT_SECRET: string;
   PASSWORD_PEPPER: string;
   FRONTEND_ORIGINS: string[];
+  REDIS_URL?: string;
 };
 
 // parse FRONTEND_URLS
@@ -57,6 +58,7 @@ const env: Env = {
   PASSWORD_PEPPER: requireEnv("PASSWORD_PEPPER"),
 
   FRONTEND_ORIGINS,
+  REDIS_URL: optionalEnv("REDIS_URL", "redis://localhost:6379"),
 };
 
 export { env, requireEnv };

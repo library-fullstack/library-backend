@@ -1,20 +1,45 @@
 import { Request, Response } from "express";
+import type { ApiError } from "../types/errors.ts";
 import adminServices from "../services/admin.service.ts";
 import { userModel } from "../models/index.ts";
+import adminService from "../services/admin.service.ts";
 
-// get all user
 const adminGetAllUserController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const users = await adminServices.adminGetAllUser();
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const pageNum = Math.max(1, Number(page));
+    const limitNum = Math.min(100, Math.max(1, Number(limit)));
 
-  if (!users) {
-    res.status(404).json({ message: "Không tìm thấy người dùng" });
-    return;
+    const result = await adminServices.adminGetAllUser(pageNum, limitNum);
+
+    if (!result.users || result.users.length === 0) {
+      res.status(200).json({
+        users: [],
+        total: 0,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: 0,
+      });
+      return;
+    }
+
+    res.json({
+      users: result.users,
+      total: result.total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(result.total / limitNum),
+    });
+  } catch (error) {
+    const err = error as ApiError;
+    console.error("[adminGetAllUserController]", err);
+    res.status(500).json({
+      message: err.message || "Failed to fetch users",
+    });
   }
-
-  res.json(users);
 };
 
 // get user bằng id
@@ -61,11 +86,12 @@ const adminCreateUserController = async (
     });
 
     res.status(201).json({ message: "Tạo người dùng thành công" });
-  } catch (err: any) {
-    console.error("[AdminCreateUserController]", err);
+  } catch (err) {
+    const error = err as ApiError;
+    console.error("[AdminCreateUserController]", error);
     res
       .status(400)
-      .json({ message: err.message || "Không thể tạo người dùng" });
+      .json({ message: error.message || "Không thể tạo người dùng" });
   }
 };
 
@@ -107,10 +133,11 @@ const adminUpdateUserByIdController = async (
     });
 
     res.status(200).json({ message: "Cập nhật người dùng thành công" });
-  } catch (err: any) {
-    console.error("AdminUpdateUserByIdController: ", err);
+  } catch (err) {
+    const error = err as ApiError;
+    console.error("AdminUpdateUserByIdController: ", error);
     res.status(500).json({
-      message: err.message || "Lỗi máy chủ, không thể cập nhật người dùng",
+      message: error.message || "Lỗi máy chủ, không thể cập nhật người dùng",
     });
   }
 };
@@ -126,8 +153,39 @@ const adminDeleteUserByIdController = async (req: Request, res: Response) => {
     await adminServices.adminDeleteUserById(user_id);
 
     res.status(200).json({ message: "Xoá thành công người dùng" });
-  } catch (err: any) {
-    res.status(400).json({ message: err.message });
+  } catch (err) {
+    const error = err as ApiError;
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const getSystemSettingsController = async (req: Request, res: Response) => {
+  const allowEdit = await adminService.getAllowStudentInfoEdit();
+  res.status(200).json({ allow_student_info_edit: allowEdit });
+};
+
+const updateSystemSettingsController = async (req: Request, res: Response) => {
+  try {
+    const { allow_student_info_edit } = req.body;
+
+    if (allow_student_info_edit === undefined) {
+      return res
+        .status(400)
+        .json({ message: "Thiếu giá trị allow_student_info_edit" });
+    }
+
+    await adminService.updateAllowStudentInfoEdit(allow_student_info_edit);
+
+    res.status(200).json({
+      message: "Cập nhật thành công",
+      allow_student_info_edit,
+    });
+  } catch (err) {
+    const error = err as ApiError;
+    console.error("[updateSystemSettingsController]", error);
+    res.status(500).json({
+      message: error.message || "Không thể cập nhật thiết lập hệ thống",
+    });
   }
 };
 
@@ -137,4 +195,6 @@ export {
   adminCreateUserController,
   adminDeleteUserByIdController,
   adminUpdateUserByIdController,
+  getSystemSettingsController,
+  updateSystemSettingsController,
 };

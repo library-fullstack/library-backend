@@ -1,15 +1,37 @@
 import express from "express";
 import { authMiddleware } from "../../middlewares/auth.middleware.ts";
 import { authorize } from "../../middlewares/authorize.middleware.ts";
+import {
+  cacheMiddleware,
+  invalidateCacheMiddleware,
+} from "../../middlewares/cache.middleware.ts";
 import * as bookController from "../../controllers/book/book.controller.ts";
 import uploadRouter from "./upload.route.ts";
 
 const router = express.Router();
 
-// Public: lấy tổng số sách active (không cần auth) - đặt trước các route khác để tránh conflict với /:bookId
-router.get("/count", bookController.getPublicBookCountController);
+router.get(
+  "/count",
+  cacheMiddleware(600, "books:count"),
+  bookController.getPublicBookCountController
+);
+
+router.get(
+  "/stats/overview",
+  authMiddleware,
+  authorize("ADMIN"),
+  cacheMiddleware(300, "books:stats"),
+  bookController.getBookStatsController
+);
 
 router.get("/", bookController.getAllBooksController);
+
+router.get(
+  "/:bookId/available",
+  authMiddleware,
+  bookController.checkBookAvailableController
+);
+
 router.get("/:bookId", bookController.getBookByIdController);
 
 // chỉ cho ADMIN với LIBRA upload ảnh
@@ -25,6 +47,7 @@ router.post(
   "/",
   authMiddleware,
   authorize("ADMIN", "LIBRARIAN"),
+  invalidateCacheMiddleware(["books:*"]),
   bookController.createBookController
 );
 
@@ -33,6 +56,7 @@ router.put(
   "/:bookId",
   authMiddleware,
   authorize("ADMIN", "LIBRARIAN"),
+  invalidateCacheMiddleware(["books:*"]),
   bookController.updateBookByIdController
 );
 
@@ -41,6 +65,7 @@ router.delete(
   "/:bookId",
   authMiddleware,
   authorize("ADMIN", "LIBRARIAN"),
+  invalidateCacheMiddleware(["books:*"]),
   bookController.deleteBookByIdController
 );
 
@@ -49,22 +74,8 @@ router.patch(
   "/:bookId/status",
   authMiddleware,
   authorize("ADMIN", "LIBRARIAN"),
+  invalidateCacheMiddleware(["books:*"]),
   bookController.updateBookStatusController
-);
-
-// chỉ cho ADMIN xem tổng quan về số lượng sách,...
-router.get(
-  "/stats/overview",
-  authMiddleware,
-  authorize("ADMIN"),
-  bookController.getBookStatsController
-);
-
-// xem sách đang còn có thể mượn
-router.get(
-  "/:bookId/available",
-  authMiddleware,
-  bookController.checkBookAvailableController
 );
 
 export default router;

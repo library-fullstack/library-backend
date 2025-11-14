@@ -51,7 +51,11 @@ export const verificationService = {
 
     await sendChangePasswordOtpEmail(email, userName, code);
 
-    console.log("[OTP] Sent new CHANGE_PASSWORD OTP:", code);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[OTP] Sent new CHANGE_PASSWORD OTP:", code);
+    } else {
+      console.log("[OTP] Sent new CHANGE_PASSWORD OTP to user:", userId);
+    }
     return { reused: false, code, expires_at: expires };
   },
 

@@ -177,6 +177,10 @@ const changePasswordWithOtpController = async (req: Request, res: Response) => {
 const getCurrentUserController = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
+    const userEmail = (req as any).user?.email;
+
+    console.log("[getCurrentUser] Token decoded:", { userId, userEmail });
+
     if (!userId) {
       return res
         .status(401)
@@ -188,10 +192,25 @@ const getCurrentUserController = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
 
+    console.log("[getCurrentUser] Returning user:", {
+      id: user.id,
+      email: user.email,
+    });
     res.status(200).json(user);
   } catch (err: any) {
     console.error("[getCurrentUserController] Error:", err);
     res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+const confirmStudentInfoController = async (req: Request, res: Response) => {
+  try {
+    const result = await userServices.confirmStudentInfo(req.body);
+    res.status(200).json(result);
+  } catch (err: any) {
+    res
+      .status(400)
+      .json({ message: err.message || "Không thể xác nhận thông tin." });
   }
 };
 
@@ -203,4 +222,5 @@ export {
   checkCurrentPasswordController,
   changePasswordWithOtpController,
   getCurrentUserController,
+  confirmStudentInfoController,
 };

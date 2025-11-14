@@ -43,24 +43,67 @@ const getAllBooks = async (filters?: BookFilters): Promise<Book[]> => {
       p.name AS publisher_name,
       COUNT(DISTINCT ba.author_id) AS author_count,
       GROUP_CONCAT(DISTINCT a.name ORDER BY ba.ord SEPARATOR ', ') AS author_names,
-      (SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = b.id) AS copies_count,
-      (SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = b.id AND bc.status = 'AVAILABLE') AS available_count
+      COUNT(DISTINCT bc.id) AS copies_count,
+      COUNT(DISTINCT CASE WHEN bc.status = 'AVAILABLE' THEN bc.id ELSE NULL END) AS available_count
     FROM books b
     LEFT JOIN book_categories c ON b.category_id = c.id
     LEFT JOIN publishers p ON b.publisher_id = p.id
     LEFT JOIN book_authors ba ON ba.book_id = b.id
     LEFT JOIN authors a ON a.id = ba.author_id
+    LEFT JOIN book_copies bc ON bc.book_id = b.id
     WHERE 1=1
   `;
   const params: any[] = [];
 
   if (filters?.keyword) {
-    sql += " AND (b.title LIKE ? OR a.name LIKE ? OR p.name LIKE ?)";
-    params.push(
-      `%${filters.keyword}%`,
-      `%${filters.keyword}%`,
-      `%${filters.keyword}%`
-    );
+    const normalizedKeyword = filters.keyword.trim();
+
+    const keywords = normalizedKeyword.split(" OR ").map((k) => k.trim());
+
+    const searchType = filters.searchType || "all";
+
+    if (keywords.length > 1) {
+      const orConditions = keywords
+        .map(() => {
+          if (searchType === "author") {
+            return "TRIM(a.name) LIKE ?";
+          } else if (searchType === "title") {
+            return "b.title LIKE ?";
+          } else if (searchType === "publisher") {
+            return "p.name LIKE ?";
+          } else {
+            return "(b.title LIKE ? OR TRIM(a.name) LIKE ? OR p.name LIKE ?)";
+          }
+        })
+        .join(" OR ");
+      sql += ` AND (${orConditions})`;
+
+      keywords.forEach((keyword) => {
+        if (searchType === "all") {
+          params.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
+        } else {
+          params.push(`%${keyword}%`);
+        }
+      });
+    } else {
+      if (searchType === "author") {
+        sql += " AND TRIM(a.name) LIKE ?";
+        params.push(`%${normalizedKeyword}%`);
+      } else if (searchType === "title") {
+        sql += " AND b.title LIKE ?";
+        params.push(`%${normalizedKeyword}%`);
+      } else if (searchType === "publisher") {
+        sql += " AND p.name LIKE ?";
+        params.push(`%${normalizedKeyword}%`);
+      } else {
+        sql += " AND (b.title LIKE ? OR TRIM(a.name) LIKE ? OR p.name LIKE ?)";
+        params.push(
+          `%${normalizedKeyword}%`,
+          `%${normalizedKeyword}%`,
+          `%${normalizedKeyword}%`
+        );
+      }
+    }
   }
 
   if (filters?.categoryId) {
@@ -73,17 +116,21 @@ const getAllBooks = async (filters?: BookFilters): Promise<Book[]> => {
     params.push(filters.status);
   }
 
+  const limit = filters?.limit ?? 12;
+  const offset = filters?.offset ?? 0;
+  const cursor = filters?.cursor;
+
+  const pageOffset = cursor ? Number(cursor) : offset;
+
   sql += `
     GROUP BY b.id
     ORDER BY ${orderByClause}
+    LIMIT ${limit}
+    OFFSET ${pageOffset}
   `;
 
-  const limit = filters?.limit ?? 20;
-  const offset = filters?.offset ?? 0;
-  sql += " LIMIT ? OFFSET ?";
-  params.push(limit, offset);
-
   const [rows] = await connection.query<Book[]>(sql, params);
+
   return rows;
 };
 
@@ -95,7 +142,7 @@ const getBookById = async (bookId: number): Promise<Book | null> => {
       p.name AS publisher_name,
       GROUP_CONCAT(DISTINCT a.name ORDER BY ba.ord SEPARATOR ', ') AS author_names,
       COUNT(DISTINCT bc.id) AS copies_count,
-      SUM(bc.status = 'AVAILABLE') AS available_count
+      COUNT(DISTINCT CASE WHEN bc.status = 'AVAILABLE' THEN bc.id ELSE NULL END) AS available_count
     FROM books b
     LEFT JOIN book_categories c ON b.category_id = c.id
     LEFT JOIN publishers p ON b.publisher_id = p.id
@@ -226,12 +273,11 @@ const isBookAvailable = async (bookId: number): Promise<boolean> => {
   return rows[0].count > 0;
 };
 
-// đếm số sách có status là active
+// đếm tổng số sách (không filter status)
 const countPublicBooks = async (): Promise<{ total: number }> => {
   const [rows] = await connection.query<any[]>(`
     SELECT COUNT(*) AS total
-    FROM books
-    WHERE status = 'ACTIVE';
+    FROM books;
   `);
   return { total: rows[0].total };
 };

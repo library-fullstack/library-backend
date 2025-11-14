@@ -19,7 +19,6 @@ export type BookSortBy =
   | "popular";
 
 // book filter params để truy vấn sách
-
 export interface BookFilters {
   keyword?: string;
   categoryId?: number;
@@ -27,6 +26,8 @@ export interface BookFilters {
   sortBy?: BookSortBy;
   limit?: number;
   offset?: number;
+  cursor?: number;
+  searchType?: "all" | "author" | "title" | "publisher";
 }
 
 // check
