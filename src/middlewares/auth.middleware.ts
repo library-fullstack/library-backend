@@ -5,8 +5,17 @@ import * as jwt from "jsonwebtoken";
 
 const jwtLib = jwt.default || jwt;
 
+export interface AuthenticatedRequest extends Request {
+  userId?: string;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
+
 export const authMiddleware = (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -28,6 +37,7 @@ export const authMiddleware = (
       });
     }
 
+    req.userId = decoded.userId;
     (req as any).user = {
       id: decoded.userId,
       email: decoded.email,
