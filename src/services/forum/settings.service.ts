@@ -13,13 +13,11 @@ export interface ForumSettings {
 const ForumSettingsService = {
   async getSettings(): Promise<ForumSettings> {
     try {
-      // Check if system_settings table exists
       const checkTableQuery = `
         SHOW TABLES LIKE 'system_settings'
       `;
       const [tableExists] = await connection.query(checkTableQuery);
 
-      // Return default settings if table doesn't exist
       if (!Array.isArray(tableExists) || tableExists.length === 0) {
         console.log("system_settings table not found, returning defaults");
         return {
@@ -75,14 +73,12 @@ const ForumSettingsService = {
           }
         });
       } else {
-        // Insert default settings if not found
         await this.initializeDefaultSettings();
       }
 
       return settings;
     } catch (error) {
       console.error("ForumSettingsService.getSettings error:", error);
-      // Return defaults on error instead of throwing
       return {
         allow_students_create_post: false,
         allow_librarians_create_post: true,

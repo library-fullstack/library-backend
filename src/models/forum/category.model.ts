@@ -8,7 +8,7 @@ interface ForumCategory extends RowDataPacket {
   description?: string | null;
   sort_order: number;
   is_locked: boolean;
-  allowed_roles?: string; // 'STUDENT,LIBRARIAN,MODERATOR,ADMIN'
+  allowed_roles?: string;
   created_at?: Date;
   updated_at?: Date;
 }

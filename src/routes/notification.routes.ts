@@ -1,0 +1,25 @@
+import { Router } from "express";
+import * as notificationController from "../controllers/notification.controller.ts";
+import { authMiddleware } from "../middlewares/auth.middleware.ts";
+
+const router = Router();
+
+router.get("/", authMiddleware, notificationController.getNotifications);
+router.get(
+  "/unread-count",
+  authMiddleware,
+  notificationController.getUnreadCount
+);
+router.patch("/:id/read", authMiddleware, notificationController.markAsRead);
+router.patch(
+  "/mark-all-read",
+  authMiddleware,
+  notificationController.markAllAsRead
+);
+router.delete(
+  "/:id",
+  authMiddleware,
+  notificationController.deleteNotification
+);
+
+export default router;

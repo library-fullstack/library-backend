@@ -8,6 +8,7 @@ import { verifyAccessToken } from "../../utils/token.ts";
 import {
   createPost,
   getPosts,
+  getMyPosts,
   getPostById,
   updatePost,
   deletePost,
@@ -19,7 +20,6 @@ import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.ts"
 
 const router = Router();
 
-// Optional auth middleware - tries to authenticate but doesn't fail if no token
 const optionalAuth = (req: any, res: any, next: any) => {
   const header = req.headers.authorization;
   if (header && header.startsWith("Bearer ")) {
@@ -34,17 +34,15 @@ const optionalAuth = (req: any, res: any, next: any) => {
           role: decoded.role,
         };
       }
-    } catch (err) {
-      // Ignore auth errors for optional auth
-    }
+    } catch (err) {}
   }
   next();
 };
 
-// GET - List all posts with filters (PUBLIC with optional auth)
 router.get("/", optionalAuth, cacheMiddleware(300, "forum:posts"), getPosts);
 
-// POST - Create new post
+router.get("/my-posts", authMiddleware, getMyPosts);
+
 router.post(
   "/",
   authMiddleware,
@@ -52,11 +50,8 @@ router.post(
   createPost
 );
 
-// GET - Get single post by ID (PUBLIC)
-// No caching since detail view changes frequently (likes, comments)
 router.get("/:id", getPostById);
 
-// PATCH - Update post (owner only)
 router.patch(
   "/:id",
   authMiddleware,
@@ -64,7 +59,6 @@ router.patch(
   updatePost
 );
 
-// DELETE - Delete post (owner only)
 router.delete(
   "/:id",
   authMiddleware,
@@ -72,7 +66,6 @@ router.delete(
   deletePost
 );
 
-// POST - Like/Unlike post
 router.post(
   "/:id/like",
   authMiddleware,
@@ -80,7 +73,6 @@ router.post(
   likePost
 );
 
-// POST - Report post
 router.post(
   "/:id/report",
   authMiddleware,
@@ -88,7 +80,6 @@ router.post(
   reportPost
 );
 
-// GET - Get comments for a post
 router.get(
   "/:id/comments",
   cacheMiddleware(300, "forum:comments:post:"),

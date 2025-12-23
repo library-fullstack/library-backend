@@ -8,7 +8,6 @@ import ForumPostService from "../../services/forum/post.service.ts";
 
 const router = Router();
 
-// GET - Search posts
 router.get(
   "/",
   authMiddleware,
@@ -62,7 +61,6 @@ router.get(
   }
 );
 
-// GET - Get trending posts
 router.get(
   "/trending",
   authMiddleware,
@@ -94,7 +92,6 @@ router.get(
   }
 );
 
-// GET - Get posts by category
 router.get(
   "/category/:categoryId",
   authMiddleware,

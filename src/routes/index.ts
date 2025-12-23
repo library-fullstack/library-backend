@@ -1,5 +1,6 @@
 import express from "express";
 import bookRouter from "./book/book.routes.ts";
+import bookUploadRouter from "./book/upload.routes.ts";
 import authorRouter from "./book/bookAuthor.route.ts";
 import categoryRouter from "./book/bookCategory.route.ts";
 import imageRouter from "./book/bookImage.route.ts";
@@ -21,6 +22,12 @@ import bookFavouriteRoute from "./bookFavourite.routes.ts";
 import { bannerPublicRoutes, bannerAdminRoutes } from "./banner.routes.ts";
 import { settingsAdminRoutes } from "./settings.routes.ts";
 import metricsRoute from "./metrics.routes.ts";
+import newsRoute from "./news.routes.ts";
+import eventsRoute from "./events.routes.ts";
+import activityLogRoute from "./activityLog.routes.ts";
+import systemSettingsRoute from "./systemSettings.routes.ts";
+import uploadRoute from "./upload.routes.ts";
+import notificationRoute from "./notification.routes.ts";
 import SettingsService from "../services/settings.service.ts";
 
 const router = express.Router();
@@ -47,8 +54,21 @@ router.get("/health", async (req, res) => {
 
 router.use("/auth", authRoute);
 router.use("/admin", adminRoute);
-router.use("/users", userRoute);
+router.use("/user", userRoute);
+router.use("/users", (req, res, next) => {
+  const isAdminOperation =
+    (req.method === "GET" && req.path === "/") ||
+    (req.method === "POST" && req.path === "/") ||
+    (req.method === "PUT" && req.path.match(/^\/[a-f0-9-]+$/)) ||
+    (req.method === "DELETE" && req.path.match(/^\/[a-f0-9-]+$/));
+
+  if (isAdminOperation) {
+    return adminRoute(req, res, next);
+  }
+  return userRoute(req, res, next);
+});
 router.use("/statistics", statisticsRoute);
+router.use("/books/upload", bookUploadRouter);
 router.use("/books", bookRouter);
 router.use("/authors", authorRouter);
 router.use("/categories", categoryRouter);
@@ -69,6 +89,13 @@ router.use("/banners", bannerPublicRoutes);
 router.use("/admin/banners", bannerAdminRoutes);
 
 router.use("/admin/settings", settingsAdminRoutes);
+
+router.use("/news", newsRoute);
+router.use("/events", eventsRoute);
+router.use("/activity-logs", activityLogRoute);
+router.use("/system-settings", systemSettingsRoute);
+router.use("/admin/upload", uploadRoute);
+router.use("/notifications", notificationRoute);
 
 router.use("/metrics", metricsRoute);
 

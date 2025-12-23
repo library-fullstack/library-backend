@@ -99,7 +99,6 @@ const updateCurrentUserAvatarController = async (
   try {
     const userId = (req as any).user?.id;
     if (!userId) {
-      console.error("[Avatar Upload] No user ID in request");
       return res
         .status(401)
         .json({ message: "Không xác thực được người dùng" });
@@ -107,30 +106,14 @@ const updateCurrentUserAvatarController = async (
 
     const file = req.file;
     if (!file) {
-      console.error("[Avatar Upload] No file in request");
       return res.status(400).json({ message: "Thiếu file ảnh" });
     }
 
-    console.log("[Avatar Upload] Starting upload for user:", userId);
-    console.log("[Avatar Upload] File info:", {
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-      path: file.path,
-    });
-
     const uploaded = await uploadToCloudinary(file.path, "avatars");
-
-    console.log("[Avatar Upload] Cloudinary upload successful:", {
-      secure_url: uploaded.secure_url,
-      public_id: uploaded.public_id,
-    });
 
     await userServices.updateUserById(userId, {
       avatar_url: uploaded.secure_url,
     });
-
-    console.log("[Avatar Upload] Database updated successfully");
 
     return res.status(200).json({
       message: "Cập nhật ảnh đại diện thành công",
@@ -179,8 +162,6 @@ const getCurrentUserController = async (req: Request, res: Response) => {
     const userId = (req as any).user?.id;
     const userEmail = (req as any).user?.email;
 
-    console.log("[getCurrentUser] Token decoded:", { userId, userEmail });
-
     if (!userId) {
       return res
         .status(401)
@@ -192,10 +173,6 @@ const getCurrentUserController = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
 
-    console.log("[getCurrentUser] Returning user:", {
-      id: user.id,
-      email: user.email,
-    });
     res.status(200).json(user);
   } catch (err: any) {
     console.error("[getCurrentUserController] Error:", err);
@@ -214,6 +191,43 @@ const confirmStudentInfoController = async (req: Request, res: Response) => {
   }
 };
 
+const getUserBorrowStatsController = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Chưa đăng nhập",
+      });
+    }
+
+    const [stats] = await connection.query(
+      `SELECT 
+        COUNT(CASE WHEN status IN ('PENDING', 'CONFIRMED', 'APPROVED', 'ACTIVE') THEN 1 END) as active,
+        COUNT(CASE WHEN status = 'RETURNED' THEN 1 END) as returned
+      FROM borrows 
+      WHERE user_id = ?`,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        active: (stats as any)[0]?.active || 0,
+        returned: (stats as any)[0]?.returned || 0,
+      },
+    });
+  } catch (error: any) {
+    console.error("[getUserBorrowStatsController] Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Không thể lấy thống kê mượn sách",
+      error: error.message,
+    });
+  }
+};
+
 export {
   getUserByIdController,
   updateUserByIdController,
@@ -223,4 +237,5 @@ export {
   changePasswordWithOtpController,
   getCurrentUserController,
   confirmStudentInfoController,
+  getUserBorrowStatsController,
 };

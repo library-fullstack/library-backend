@@ -74,7 +74,8 @@ app.use(
         /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) ||
         /^http:\/\/172\.\d+\.\d+\.\d+(:\d+)?$/.test(origin) ||
         /^http:\/\/171\.\d+\.\d+\.\d+(:\d+)?$/.test(origin) ||
-        /^http:\/\/116\.111\.115\.235(:\d+)?$/.test(origin);
+        /^http:\/\/116\.111\.115\.235(:\d+)?$/.test(origin) ||
+        /^http:\/\/172\.24\.160\.1(:\d+)?$/.test(origin);
 
       if (isLAN) {
         console.log("CORS: Cho phép LAN IP:", origin);

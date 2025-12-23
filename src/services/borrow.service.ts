@@ -1,5 +1,12 @@
 import connection from "../config/db.ts";
 import BorrowCartService from "./borrowCart.service.ts";
+import {
+  Borrow,
+  BorrowWithDetails,
+  BorrowStatus,
+  ConfirmBorrowInput,
+} from "../models/borrow.model.ts";
+import { BorrowDetailWithBook } from "../models/borrowDetail.model.ts";
 
 interface CreateBorrowItem {
   book_id: number;
@@ -92,11 +99,9 @@ export const BorrowService = {
           user_id, 
           borrow_date, 
           due_date, 
-          status, 
-          created_at, 
-          updated_at
+          status
         )
-        VALUES (?, NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY), 'PENDING', NOW(), NOW())
+        VALUES (?, NOW(), DATE_ADD(NOW(), INTERVAL 14 DAY), 'PENDING')
       `;
 
       const [borrowResult] = await conn.query(insertBorrowQuery, [userId]);
@@ -136,7 +141,7 @@ export const BorrowService = {
 
           const updateCopyQuery = `
             UPDATE book_copies
-            SET status = 'RESERVED', updated_at = NOW()
+            SET status = 'RESERVED'
             WHERE id = ?
           `;
           await conn.query(updateCopyQuery, [copy.id]);
@@ -173,6 +178,491 @@ export const BorrowService = {
     } finally {
       conn.release();
     }
+  },
+
+  async getBorrowPreview(
+    borrowId: number,
+    userId: string
+  ): Promise<BorrowWithDetails | null> {
+    const query = `
+      SELECT 
+        b.id, b.user_id, b.borrow_date, b.due_date, b.status, b.note,
+        b.created_at, b.updated_at,
+        u.full_name as fullname, u.email, u.student_id,
+        GROUP_CONCAT(
+          DISTINCT CONCAT(
+            bd.copy_id, '|',
+            bk.id, '|',
+            bk.title, '|',
+            COALESCE(bk.thumbnail_url, ''), '|',
+            COALESCE(bk.isbn13, ''), '|',
+            COALESCE(bc.barcode, '')
+          ) SEPARATOR ';;;'
+        ) as items_data
+      FROM borrows b
+      JOIN users u ON u.id = b.user_id
+      LEFT JOIN borrow_details bd ON bd.borrow_id = b.id
+      LEFT JOIN book_copies bc ON bc.id = bd.copy_id
+      LEFT JOIN books bk ON bk.id = bc.book_id
+      WHERE b.id = ? AND b.user_id = ?
+      GROUP BY b.id
+    `;
+
+    const [rows] = await connection.query(query, [borrowId, userId]);
+    const data = rows as BorrowWithDetails[];
+
+    if (data.length === 0) return null;
+
+    const borrow = data[0];
+
+    if (borrow.items_data) {
+      const itemsStr = (borrow as Record<string, string>).items_data;
+      borrow.items = itemsStr.split(";;;").map((item) => {
+        const [copy_id, book_id, book_title, thumbnail_url, isbn, barcode] =
+          item.split("|");
+        return {
+          copy_id: Number(copy_id),
+          book_id: Number(book_id),
+          book_title,
+          thumbnail_url: thumbnail_url || undefined,
+          isbn: isbn || undefined,
+          barcode: barcode || undefined,
+        };
+      });
+    }
+
+    return borrow;
+  },
+
+  async confirmBorrow(
+    input: ConfirmBorrowInput
+  ): Promise<{ success: boolean; message: string }> {
+    const conn = await connection.getConnection();
+
+    try {
+      await conn.beginTransaction();
+
+      const [borrowRows] = await conn.query(
+        `SELECT id, user_id, status FROM borrows WHERE id = ? AND user_id = ?`,
+        [input.borrow_id, input.user_id]
+      );
+      const borrows = borrowRows as Borrow[];
+
+      if (borrows.length === 0) {
+        throw new Error("Phiếu mượn không tồn tại hoặc không thuộc về bạn");
+      }
+
+      const borrow = borrows[0];
+
+      if (borrow.status !== BorrowStatus.PENDING) {
+        throw new Error("Phiếu mượn đã được xác nhận hoặc đã bị hủy");
+      }
+
+      const [detailRows] = await conn.query(
+        `SELECT bd.copy_id, bc.status 
+         FROM borrow_details bd
+         JOIN book_copies bc ON bc.id = bd.copy_id
+         WHERE bd.borrow_id = ?`,
+        [input.borrow_id]
+      );
+      const details = detailRows as Array<{ copy_id: number; status: string }>;
+
+      const unavailableCopies = details.filter((d) => d.status !== "RESERVED");
+      if (unavailableCopies.length > 0) {
+        throw new Error(
+          "Một số bản sao không còn khả dụng. Vui lòng liên hệ quản trị viên."
+        );
+      }
+
+      await conn.query(
+        `UPDATE borrows 
+         SET status = ?, signature = ?
+         WHERE id = ?`,
+        [BorrowStatus.CONFIRMED, input.signature, input.borrow_id]
+      );
+
+      await conn.commit();
+
+      return {
+        success: true,
+        message:
+          "Xác nhận mượn sách thành công! Vui lòng đến thư viện để nhận sách.",
+      };
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+  },
+
+  async getAdminBorrows(params: {
+    page: number;
+    limit: number;
+    status?: string;
+    search?: string;
+  }): Promise<{ borrows: BorrowWithDetails[]; total: number }> {
+    const offset = (params.page - 1) * params.limit;
+    const conditions: string[] = ["1=1"];
+    const queryParams: (string | number)[] = [];
+
+    console.log("[getAdminBorrows] params.status:", params.status);
+
+    if (params.status && params.status.trim()) {
+      console.log(
+        "[getAdminBorrows] Filtering for exact status:",
+        params.status
+      );
+      conditions.push("b.status = ?");
+      queryParams.push(params.status);
+    }
+
+    if (params.search) {
+      conditions.push(
+        "(u.full_name LIKE ? OR u.email LIKE ? OR u.student_id LIKE ? OR bk.title LIKE ?)"
+      );
+      const searchPattern = `%${params.search}%`;
+      queryParams.push(
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern
+      );
+    }
+
+    const whereClause = conditions.join(" AND ");
+
+    const countQuery = `
+      SELECT COUNT(DISTINCT b.id) as total
+      FROM borrows b
+      JOIN users u ON u.id = b.user_id
+      LEFT JOIN borrow_details bd ON bd.borrow_id = b.id
+      LEFT JOIN book_copies bc ON bc.id = bd.copy_id
+      LEFT JOIN books bk ON bk.id = bc.book_id
+      WHERE ${whereClause}
+    `;
+
+    const [countRows] = await connection.query(countQuery, queryParams);
+    const total = (countRows as { total: number }[])[0].total;
+
+    const dataQuery = `
+      SELECT 
+        b.id, b.user_id, b.borrow_date, b.due_date, b.return_date, b.status, 
+        b.signature, b.note, b.created_at, b.updated_at,
+        u.full_name as fullname, u.email, u.student_id,
+        GROUP_CONCAT(
+          DISTINCT CONCAT(
+            bd.copy_id, '|',
+            bk.id, '|',
+            bk.title, '|',
+            COALESCE(bk.thumbnail_url, ''), '|',
+            COALESCE(bk.isbn13, ''), '|',
+            COALESCE(bc.barcode, '')
+          ) SEPARATOR ';;;'
+        ) as items_data
+      FROM borrows b
+      JOIN users u ON u.id = b.user_id
+      LEFT JOIN borrow_details bd ON bd.borrow_id = b.id
+      LEFT JOIN book_copies bc ON bc.id = bd.copy_id
+      LEFT JOIN books bk ON bk.id = bc.book_id
+      WHERE ${whereClause}
+      GROUP BY b.id
+      ORDER BY b.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const [rows] = await connection.query(dataQuery, [
+      ...queryParams,
+      params.limit,
+      offset,
+    ]);
+    const borrows = rows as BorrowWithDetails[];
+
+    for (const borrow of borrows) {
+      if ((borrow as Record<string, string>).items_data) {
+        const itemsStr = (borrow as Record<string, string>).items_data;
+        borrow.items = itemsStr.split(";;;").map((item) => {
+          const [copy_id, book_id, book_title, thumbnail_url, isbn, barcode] =
+            item.split("|");
+          return {
+            copy_id: Number(copy_id),
+            book_id: Number(book_id),
+            book_title,
+            thumbnail_url: thumbnail_url || undefined,
+            isbn: isbn || undefined,
+            barcode: barcode || undefined,
+          };
+        });
+      }
+    }
+
+    return { borrows, total };
+  },
+
+  async updateBorrowStatus(
+    borrowId: number,
+    status: BorrowStatus,
+    adminId: string
+  ): Promise<void> {
+    const conn = await connection.getConnection();
+
+    try {
+      await conn.beginTransaction();
+
+      const [borrowRows] = await conn.query(
+        "SELECT id, status FROM borrows WHERE id = ?",
+        [borrowId]
+      );
+      const borrows = borrowRows as Borrow[];
+
+      if (borrows.length === 0) {
+        throw new Error("Phiếu mượn không tồn tại");
+      }
+
+      const currentStatus = borrows[0].status;
+
+      const validTransitions: Record<string, string[]> = {
+        PENDING: ["CONFIRMED", "CANCELLED"],
+        CONFIRMED: ["APPROVED", "CANCELLED"],
+        APPROVED: ["ACTIVE", "CANCELLED"],
+        ACTIVE: ["RETURNED", "OVERDUE", "CANCELLED"],
+        OVERDUE: ["RETURNED", "CANCELLED"],
+      };
+
+      const allowedNext = validTransitions[currentStatus] || [];
+      if (!allowedNext.includes(status)) {
+        throw new Error(
+          `Không thể chuyển từ trạng thái "${currentStatus}" sang "${status}". Trạng thái hợp lệ: ${allowedNext.join(", ")}`
+        );
+      }
+
+      const updateQuery =
+        status === BorrowStatus.RETURNED
+          ? `UPDATE borrows SET status = ?, return_date = CURDATE() WHERE id = ?`
+          : `UPDATE borrows SET status = ? WHERE id = ?`;
+
+      await conn.query(updateQuery, [status, borrowId]);
+
+      if (status === BorrowStatus.APPROVED) {
+        await conn.query(
+          `UPDATE book_copies bc
+           JOIN borrow_details bd ON bd.copy_id = bc.id
+           SET bc.status = 'ON_LOAN'
+           WHERE bd.borrow_id = ?`,
+          [borrowId]
+        );
+      } else if (status === BorrowStatus.RETURNED) {
+        await conn.query(
+          `UPDATE book_copies bc
+           JOIN borrow_details bd ON bd.copy_id = bc.id
+           SET bc.status = 'AVAILABLE'
+           WHERE bd.borrow_id = ?`,
+          [borrowId]
+        );
+      } else if (status === BorrowStatus.CANCELLED) {
+        await conn.query(
+          `UPDATE book_copies bc
+           JOIN borrow_details bd ON bd.copy_id = bc.id
+           SET bc.status = 'AVAILABLE'
+           WHERE bd.borrow_id = ?`,
+          [borrowId]
+        );
+      }
+
+      await conn.commit();
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+  },
+
+  async getUserBorrows(
+    userId: string,
+    status?: string
+  ): Promise<BorrowWithDetails[]> {
+    const conditions = ["b.user_id = ?"];
+    const queryParams: (string | number)[] = [userId];
+
+    if (status) {
+      conditions.push("b.status = ?");
+      queryParams.push(status);
+    }
+
+    const whereClause = conditions.join(" AND ");
+
+    const query = `
+      SELECT 
+        b.id, b.user_id, b.borrow_date, b.due_date, b.return_date, b.status, 
+        b.signature, b.note, b.created_at, b.updated_at,
+        u.full_name as fullname, u.email, u.student_id,
+        GROUP_CONCAT(
+          DISTINCT CONCAT(
+            bd.copy_id, '|',
+            bk.id, '|',
+            bk.title, '|',
+            COALESCE(bk.thumbnail_url, ''), '|',
+            COALESCE(bk.isbn13, ''), '|',
+            COALESCE(bc.barcode, '')
+          ) SEPARATOR ';;;'
+        ) as items_data
+      FROM borrows b
+      JOIN users u ON u.id = b.user_id
+      LEFT JOIN borrow_details bd ON bd.borrow_id = b.id
+      LEFT JOIN book_copies bc ON bc.id = bd.copy_id
+      LEFT JOIN books bk ON bk.id = bc.book_id
+      WHERE ${whereClause}
+      GROUP BY b.id
+      ORDER BY b.created_at DESC
+    `;
+
+    const [rows] = await connection.query(query, queryParams);
+    const borrows = rows as BorrowWithDetails[];
+
+    for (const borrow of borrows) {
+      if ((borrow as Record<string, string>).items_data) {
+        const itemsStr = (borrow as Record<string, string>).items_data;
+        borrow.items = itemsStr.split(";;;").map((item) => {
+          const [copy_id, book_id, book_title, thumbnail_url, isbn, barcode] =
+            item.split("|");
+          return {
+            copy_id: Number(copy_id),
+            book_id: Number(book_id),
+            book_title,
+            thumbnail_url: thumbnail_url || undefined,
+            isbn: isbn || undefined,
+            barcode: barcode || undefined,
+          };
+        });
+      }
+    }
+
+    return borrows;
+  },
+
+  async renewBorrow(
+    borrowId: number,
+    userId: string
+  ): Promise<{ success: boolean; message: string; data?: any }> {
+    const conn = await connection.getConnection();
+
+    try {
+      await conn.beginTransaction();
+
+      // 1. lấy thông tin borrow
+      const [borrowRows] = await conn.query(
+        `SELECT id, user_id, status, due_date, renewal_count 
+         FROM borrows 
+         WHERE id = ? AND user_id = ?`,
+        [borrowId, userId]
+      );
+      const borrows = borrowRows as Borrow[];
+
+      if (borrows.length === 0) {
+        throw new Error("Phiếu mượn không tồn tại");
+      }
+
+      const borrow = borrows[0];
+
+      // 2. check status = ACTIVE
+      if (borrow.status !== BorrowStatus.ACTIVE) {
+        throw new Error("Chỉ có thể gia hạn phiếu đang mượn (ACTIVE)");
+      }
+
+      // 3. check chưa quá hạn
+      const now = new Date();
+      const dueDate = new Date(borrow.due_date);
+      if (now > dueDate) {
+        throw new Error("Không thể gia hạn phiếu đã quá hạn");
+      }
+
+      // 4. check renewal_count < 1
+      const renewalCount = borrow.renewal_count || 0;
+      if (renewalCount >= 1) {
+        throw new Error("Đã gia hạn tối đa 1 lần. Vui lòng trả sách đúng hạn.");
+      }
+
+      // 5. check user không có sách quá hạn khác
+      const [overdueRows] = await conn.query(
+        `SELECT COUNT(*) as count 
+         FROM borrows 
+         WHERE user_id = ? AND status = 'OVERDUE'`,
+        [userId]
+      );
+      const overdueCount = (overdueRows as any)[0].count;
+      if (overdueCount > 0) {
+        throw new Error(
+          "Không thể gia hạn khi có sách khác đang quá hạn. Vui lòng trả sách quá hạn trước."
+        );
+      }
+
+      // 6. tính date mới khi +7 ngày
+      const newDueDate = new Date(dueDate);
+      newDueDate.setDate(newDueDate.getDate() + 7);
+
+      // 7. cập nhật borrow
+      await conn.query(
+        `UPDATE borrows 
+         SET due_date = ?, 
+             renewal_count = renewal_count + 1,
+             last_renewal_date = NOW()
+         WHERE id = ?`,
+        [newDueDate, borrowId]
+      );
+
+      await conn.commit();
+
+      return {
+        success: true,
+        message: "Gia hạn thành công",
+        data: {
+          borrow_id: borrowId,
+          old_due_date: dueDate.toISOString().split("T")[0],
+          new_due_date: newDueDate.toISOString().split("T")[0],
+          renewal_count: renewalCount + 1,
+        },
+      };
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+  },
+
+  async getBorrowById(borrowId: number): Promise<any> {
+    const query = `
+      SELECT 
+        b.id, b.user_id, b.borrow_date, b.due_date, b.status,
+        u.full_name as fullname, u.email,
+        GROUP_CONCAT(
+          DISTINCT CONCAT(bk.title)
+          SEPARATOR '|||'
+        ) as book_titles
+      FROM borrows b
+      JOIN users u ON u.id = b.user_id
+      LEFT JOIN borrow_details bd ON bd.borrow_id = b.id
+      LEFT JOIN book_copies bc ON bc.id = bd.copy_id
+      LEFT JOIN books bk ON bk.id = bc.book_id
+      WHERE b.id = ?
+      GROUP BY b.id
+    `;
+
+    const [rows] = await connection.query(query, [borrowId]);
+    const data = rows as any[];
+
+    if (data.length === 0) return null;
+
+    const borrow = data[0];
+
+    if (borrow.book_titles) {
+      borrow.items = borrow.book_titles.split("|||").map((title: string) => ({
+        title: title.trim(),
+      }));
+    }
+
+    return borrow;
   },
 };
 

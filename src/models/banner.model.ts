@@ -11,6 +11,7 @@ interface Banner extends RowDataPacket {
   subtitle_color: string;
   button_color: string;
   button_text: string;
+  button_link?: string;
   event_type: string;
   start_date: Date;
   end_date: Date;
@@ -30,6 +31,7 @@ interface CreateBannerInput {
   subtitle_color: string;
   button_color: string;
   button_text: string;
+  button_link?: string;
   event_type?: string;
   start_date?: string;
   end_date?: string;

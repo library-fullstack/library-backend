@@ -5,6 +5,7 @@ import {
   requireAdmin,
   requireOwnerOrModerator,
 } from "../../middlewares/forum-auth.middleware.ts";
+import { invalidateCacheMiddleware } from "../../middlewares/cache.middleware.ts";
 import ForumModerationService from "../../services/forum/moderation.service.ts";
 import ForumPostService from "../../services/forum/post.service.ts";
 import {
@@ -31,6 +32,7 @@ router.post(
   "/posts/:id/approve",
   authMiddleware,
   requireModerator,
+  invalidateCacheMiddleware(["forum:*", "posts:*"]),
   async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
@@ -68,6 +70,7 @@ router.post(
 router.post(
   "/posts/:id/reject",
   authMiddleware,
+  invalidateCacheMiddleware(["forum:*", "posts:*"]),
   requireModerator,
   async (req: Request, res: Response) => {
     try {

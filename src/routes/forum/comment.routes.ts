@@ -9,24 +9,20 @@ import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.ts"
 
 const router = Router();
 
-// GET - Get comments for a post
 router.get(
   "/post/:postId",
   authMiddleware,
-  // Removed cache - comments change frequently with new replies
   async (req: AuthenticatedRequest, res) => {
     await ForumCommentController.getCommentsByPost(req, res);
   }
 );
 
-// POST - Create comment
 router.post(
   "/",
   authMiddleware,
   invalidateCacheMiddleware(["forum:comments:*", "forum:*"]),
   async (req: AuthenticatedRequest, res) => {
     try {
-      // Normalize field names - handle both post_id/parent_id (from frontend) and postId/parentCommentId
       const postId = req.body.postId || req.body.post_id;
       const parentCommentId = req.body.parentCommentId || req.body.parent_id;
       const { content } = req.body;
@@ -95,7 +91,6 @@ router.post(
   }
 );
 
-// PATCH - Update comment
 router.patch(
   "/:commentId",
   authMiddleware,
@@ -114,7 +109,6 @@ router.patch(
         return;
       }
 
-      // Get comment to check ownership
       const comment = await ForumCommentController.getCommentById(
         parseInt(commentId)
       );
@@ -158,7 +152,6 @@ router.patch(
   }
 );
 
-// DELETE - Delete comment
 router.delete(
   "/:commentId",
   authMiddleware,
@@ -168,7 +161,6 @@ router.delete(
       const { commentId } = req.params;
       const userId = req.userId;
 
-      // Get comment to check ownership
       const comment = await ForumCommentController.getCommentById(
         parseInt(commentId)
       );
@@ -206,7 +198,6 @@ router.delete(
   }
 );
 
-// POST - Like/Unlike comment
 router.post(
   "/:commentId/like",
   authMiddleware,

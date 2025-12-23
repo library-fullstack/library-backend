@@ -61,4 +61,11 @@ router.post(
   userController.confirmStudentInfoController
 );
 
+// thống kê mượn sách của user hiện tại
+router.get(
+  "/stats/borrows",
+  authMiddleware,
+  userController.getUserBorrowStatsController
+);
+
 export default router;

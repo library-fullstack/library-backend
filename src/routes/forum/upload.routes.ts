@@ -7,7 +7,6 @@ import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.ts"
 
 const router = Router();
 
-// Setup multer for file uploads - save to temp directory first
 const uploadDir = "uploads/forum/temp";
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -15,7 +14,6 @@ if (!fs.existsSync(uploadDir)) {
 
 const storage = multer.diskStorage({
   destination: (req: AuthenticatedRequest, file, cb) => {
-    // Create user-specific temp directory
     const userDir = path.join(uploadDir, req.userId || "anonymous");
     if (!fs.existsSync(userDir)) {
       fs.mkdirSync(userDir, { recursive: true });
@@ -33,7 +31,6 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  // Allowed MIME types
   const allowedMimes = [
     "image/jpeg",
     "image/png",
@@ -57,11 +54,10 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max file size
+    fileSize: 10 * 1024 * 1024,
   },
 });
 
-// POST - Upload file (supports Cloudinary for images)
 router.post(
   "/",
   authMiddleware,
@@ -80,7 +76,6 @@ router.post(
       const isImage = req.file.mimetype.startsWith("image/");
 
       if (isImage) {
-        // Upload images to Cloudinary
         const cloudinary = (await import("../../config/cloudinary.ts")).default;
         const result = await cloudinary.uploader.upload(req.file.path, {
           folder: "forum/attachments",
@@ -88,10 +83,8 @@ router.post(
         });
         fileUrl = result.secure_url;
 
-        // Delete local temp file after upload
         fs.unlinkSync(req.file.path);
       } else {
-        // Keep non-image files locally
         fileUrl = `/uploads/forum/temp/${req.userId}/${req.file.filename}`;
       }
 
@@ -121,7 +114,6 @@ router.post(
   }
 );
 
-// DELETE - Delete temp file
 router.delete(
   "/:filename",
   authMiddleware,
@@ -130,7 +122,6 @@ router.delete(
       const { filename } = req.params;
       const userId = req.userId;
 
-      // Security: only allow alphanumeric, dash, and dot
       if (!/^[\w\-\.]+$/.test(filename)) {
         res.status(400).json({
           success: false,
@@ -142,7 +133,6 @@ router.delete(
       const userTempDir = path.join(uploadDir, userId || "anonymous");
       const filePath = path.join(userTempDir, filename);
 
-      // Security: ensure file is in user's temp directory
       if (!filePath.startsWith(path.resolve(userTempDir))) {
         res.status(403).json({
           success: false,

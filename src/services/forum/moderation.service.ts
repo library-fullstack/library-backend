@@ -16,14 +16,22 @@ const ForumModerationService = {
 
   async rejectPost(
     postId: number,
-    rejectedBy: string
+    moderatorId: string,
+    rejectionReason?: string
   ): Promise<{ success: boolean }> {
     const query = `
       UPDATE forum_posts
-      SET status = 'REJECTED', approved_by = ?, approved_at = NOW()
+      SET status = 'REJECTED', 
+          approved_by = ?, 
+          approved_at = NOW(),
+          rejection_reason = ?
       WHERE id = ? AND status = 'PENDING'
     `;
-    const [result] = await connection.execute(query, [rejectedBy, postId]);
+    const [result] = await connection.execute(query, [
+      moderatorId,
+      rejectionReason || null,
+      postId,
+    ]);
     return { success: (result as any).affectedRows > 0 };
   },
 

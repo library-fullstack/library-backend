@@ -3,6 +3,7 @@ import type { AuthRequest } from "../../types/errors.ts";
 import ForumCommentService from "../../services/forum/comment.service.ts";
 import ForumNotificationService from "../../services/forum/notification.service.ts";
 import ForumPostService from "../../services/forum/post.service.ts";
+import notificationService from "../../services/notification.service.ts";
 
 export const ForumCommentController = {
   async getCommentsByPost(req: Request, res: Response): Promise<void> {
@@ -29,7 +30,6 @@ export const ForumCommentController = {
         userId
       );
 
-      // Fetch replies for each comment
       const commentsWithReplies = await Promise.all(
         comments.map(async (comment) => {
           const replies = await ForumCommentService.getRepliesByParentId(
@@ -92,7 +92,6 @@ export const ForumCommentController = {
     }
   },
 
-  // Helper method for creating comment
   async createComment(
     input: {
       postId: number;
@@ -118,12 +117,15 @@ export const ForumCommentController = {
         content: input.content,
       });
 
-      // Notify parent comment author if replying
       if (input.parentCommentId) {
         const parentComment = await ForumCommentService.getCommentById(
           input.parentCommentId as any
         );
-        if (parentComment && parentComment.user_id) {
+        if (
+          parentComment &&
+          typeof parentComment.user_id === "string" &&
+          parentComment.user_id !== input.userId
+        ) {
           await ForumNotificationService.notifyCommentReply(
             input.parentCommentId,
             parentComment.user_id,
@@ -132,9 +134,19 @@ export const ForumCommentController = {
             input.content.substring(0, 100)
           );
         }
+      } else {
+        const post = await ForumPostService.getPostById(input.postId);
+        if (post && post.userId !== input.userId) {
+          await notificationService.createForumNotification(
+            post.userId,
+            "POST_COMMENTED",
+            input.postId,
+            "Có bình luận mới",
+            `${req.user?.full_name || "Ai đó"} đã bình luận vào bài viết "${post.title}"`
+          );
+        }
       }
 
-      // Note: updateCommentCount is already called in the service
       return comment;
     } catch (error) {
       console.error("Error creating comment:", error);
@@ -142,7 +154,6 @@ export const ForumCommentController = {
     }
   },
 
-  // Helper method for updating comment
   async updateComment(
     commentId: number,
     input: { content: string },
@@ -157,7 +168,6 @@ export const ForumCommentController = {
     }
   },
 
-  // Helper method for deleting comment
   async deleteComment(
     commentId: number,
     req: any,

@@ -52,7 +52,6 @@ export const ForumCategoryController = {
     }
   },
 
-  // Helper method for creating category
   async createCategory(
     input: { name: string; description?: string },
     req: Request,
@@ -71,7 +70,6 @@ export const ForumCategoryController = {
     }
   },
 
-  // Helper method for updating category
   async updateCategory(
     categoryId: number,
     input: { name?: string; description?: string },
@@ -94,7 +92,6 @@ export const ForumCategoryController = {
     }
   },
 
-  // Helper method for deleting category
   async deleteCategory(
     categoryId: number,
     req: Request,
@@ -214,7 +211,6 @@ export const ForumCategoryController = {
   },
 };
 
-// Admin methods
 export const adminCreateCategory = async (req: any, res: Response) => {
   try {
     const { name, slug, description, sort_order, is_locked, allowed_roles } =

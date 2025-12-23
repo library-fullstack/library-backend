@@ -17,12 +17,10 @@ import {
 
 const router = Router();
 
-// GET - Get all categories (PUBLIC)
 router.get("/", cacheMiddleware(600, "forum:categories"), async (req, res) => {
   await ForumCategoryController.getAllCategories(req, res);
 });
 
-// GET - Get single category (PUBLIC)
 router.get(
   "/:id",
   cacheMiddleware(600, "forum:category:"),
@@ -31,7 +29,6 @@ router.get(
   }
 );
 
-// POST - Create category (ADMIN only)
 router.post(
   "/",
   authMiddleware,
@@ -74,7 +71,6 @@ router.post(
   }
 );
 
-// PATCH - Update category (ADMIN only)
 router.patch(
   "/:id",
   authMiddleware,
@@ -111,7 +107,6 @@ router.patch(
   }
 );
 
-// DELETE - Delete category (ADMIN only)
 router.delete(
   "/:id",
   authMiddleware,
@@ -138,7 +133,6 @@ router.delete(
   }
 );
 
-// Admin routes for managing categories with permissions
 router.post(
   "/admin/create",
   authMiddleware,

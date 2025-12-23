@@ -1,29 +1,3 @@
-[
-  {
-    resource:
-      "/c:/Users/hoaug/Desktop/LearnUntilDie/PROJECT/library-ui/src/features/auth/hooks/useAuthQuery.ts",
-    owner: "eslint3",
-    code: {
-      value: "@typescript-eslint/no-unused-vars",
-      target: {
-        $mid: 1,
-        path: "/rules/no-unused-vars",
-        scheme: "https",
-        authority: "typescript-eslint.io",
-      },
-    },
-    severity: 4,
-    message:
-      "'navigate' is assigned a value but never used. Allowed unused vars must match /^_/u.",
-    source: "eslint",
-    startLineNumber: 17,
-    startColumn: 9,
-    endLineNumber: 17,
-    endColumn: 17,
-    origin: "extHost1",
-  },
-];
-
 import { Request, Response } from "express";
 import type { ApiError, AuthRequest } from "../types/errors.ts";
 import { authService } from "../services/auth.service.ts";
@@ -78,7 +52,7 @@ export const loginController = async (req: Request, res: Response) => {
     res.cookie("refreshToken", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       maxAge: 0,
       path: "/",
     });
@@ -86,8 +60,8 @@ export const loginController = async (req: Request, res: Response) => {
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: "lax",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       path: "/",
     });
 

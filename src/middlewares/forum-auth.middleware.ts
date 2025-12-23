@@ -8,9 +8,6 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-/**
- * Require specific roles (ADMIN, MODERATOR, etc.)
- */
 export const requireRole = (allowedRoles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -48,17 +45,14 @@ export const requireOwnerOrModerator =
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    // ADMIN/MODERATOR always allowed
     if (["ADMIN", "MODERATOR"].includes(userRole)) {
       return next();
     }
 
-    // Check owner
     let ownerId: string | undefined;
     if (ownerIdExtractor) {
       ownerId = ownerIdExtractor(req);
     } else {
-      // Default: try from body or params
       ownerId =
         (req.body as any)?.user_id ||
         (req.params as any)?.user_id ||

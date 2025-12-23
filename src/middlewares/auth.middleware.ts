@@ -53,3 +53,7 @@ export const authMiddleware = (
     });
   }
 };
+
+export const authenticate = authMiddleware;
+
+export { authorize } from "./authorize.middleware.js";

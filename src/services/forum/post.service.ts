@@ -59,6 +59,7 @@ interface GetPostsFilter {
   search?: string;
   status?: string;
   userId?: string;
+  includeUserPending?: boolean;
 }
 
 interface PostResponse {
@@ -153,11 +154,9 @@ const ForumPostService = {
       `;
 
       for (const file of input.files) {
-        // Files are already uploaded to Cloudinary or stored locally
-        // Just save the URL and metadata to database
         await connection.query(attachmentQuery, [
           postId,
-          file.url, // Use the URL directly (Cloudinary URL or local path)
+          file.url,
           file.filename,
           file.originalName,
           file.mimeType,
@@ -185,7 +184,7 @@ const ForumPostService = {
     }
 
     if (filter.status) {
-      if (filter.userId) {
+      if (filter.includeUserPending && filter.userId) {
         whereClause +=
           " AND (p.status = ? OR (p.user_id = ? AND p.status IN ('PENDING', 'REJECTED')))";
         params.push(filter.status, filter.userId);
@@ -359,25 +358,20 @@ const ForumPostService = {
   },
 
   async deletePost(postId: number): Promise<void> {
-    // Delete attachments
     await connection.query(
       "DELETE FROM forum_post_attachments WHERE post_id = ?",
       [postId]
     );
-    // Delete reports
     await connection.query(
       "DELETE FROM forum_reports WHERE target_post_id = ?",
       [postId]
     );
-    // Delete likes (if table exists)
     await connection
       .query("DELETE FROM forum_post_likes WHERE post_id = ?", [postId])
       .catch(() => {});
-    // Delete comments
     await connection.query("DELETE FROM forum_comments WHERE post_id = ?", [
       postId,
     ]);
-    // Finally delete the post
     await connection.query("DELETE FROM forum_posts WHERE id = ?", [postId]);
   },
 
@@ -446,7 +440,7 @@ const ForumPostService = {
   async updateCommentCount(postId: number, increment: number) {
     const query = `
       UPDATE forum_posts
-      SET comments_count = comments_count + ?
+      SET comments_count = GREATEST(0, comments_count + ?)
       WHERE id = ?
     `;
     const [result] = await connection.query(query, [increment, postId]);

@@ -169,33 +169,33 @@ export const sendOverdueNotificationEmail = async (
 };
 
 // hàm gửi email khi tài khoản bị khoá
-export const sendAccountSuspendedEmail = async (
-  to: string,
-  userName: string,
-  reason: string
-): Promise<void> => {
-  const subject = "Thông báo tài khoản bị khóa - Thư viện HBH";
-  const html = `
-  <div style="font-family: 'Segoe UI', sans-serif; background: #f8fafc; padding: 32px;">
-    <div style="max-width: 480px; margin: auto; background: #ffffff; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); padding: 32px;">
-      <h2 style="color: #EF4444; text-align: center;">Tài khoản bị khóa</h2>
-      <p style="font-size: 16px; color: #334155;">Xin chào <b>${userName}</b>,</p>
-      <p style="color: #475569; line-height: 1.6;">
-        Tài khoản của bạn đã bị khóa.<br/>
-        Lý do: <b>${reason}</b>
-      </p>
-      <p style="font-size: 14px; color: #64748B;">
-        Vui lòng liên hệ với quản trị viên để biết thêm chi tiết.
-      </p>
-    </div>
-    <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 16px;">
-      © 2025 HBH Library System. All rights reserved.
-    </p>
-  </div>
-  `;
+// export const sendAccountSuspendedEmail = async (
+//   to: string,
+//   userName: string,
+//   reason: string
+// ): Promise<void> => {
+//   const subject = "Thông báo tài khoản bị khóa - Thư viện HBH";
+//   const html = `
+//   <div style="font-family: 'Segoe UI', sans-serif; background: #f8fafc; padding: 32px;">
+//     <div style="max-width: 480px; margin: auto; background: #ffffff; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); padding: 32px;">
+//       <h2 style="color: #EF4444; text-align: center;">Tài khoản bị khóa</h2>
+//       <p style="font-size: 16px; color: #334155;">Xin chào <b>${userName}</b>,</p>
+//       <p style="color: #475569; line-height: 1.6;">
+//         Tài khoản của bạn đã bị khóa.<br/>
+//         Lý do: <b>${reason}</b>
+//       </p>
+//       <p style="font-size: 14px; color: #64748B;">
+//         Vui lòng liên hệ với quản trị viên để biết thêm chi tiết.
+//       </p>
+//     </div>
+//     <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 16px;">
+//       © 2025 HBH Library System. All rights reserved.
+//     </p>
+//   </div>
+//   `;
 
-  await sendMail(to, subject, html, "account-suspended");
-};
+//   await sendMail(to, subject, html, "account-suspended");
+// };
 
 export const sendChangePasswordOtpEmail = async (
   to: string,
@@ -226,4 +226,120 @@ export const sendChangePasswordOtpEmail = async (
   `;
 
   await sendMail(to, subject, html, "change-password");
+};
+
+// email thông báo khi admin duyệt phiếu mượn
+export const sendBorrowApprovedEmail = async (
+  to: string,
+  userName: string,
+  ticketNumber: string,
+  books: Array<{ book_title?: string; title?: string }>,
+  pickupDate: string,
+  dueDate: string
+): Promise<void> => {
+  const subject = `Phiếu mượn ${ticketNumber} đã được duyệt - Hãy đến lấy sách`;
+
+  const bookList = books
+    .map((book, index) => {
+      const title = book.book_title || book.title || "Không xác định";
+      return `<li style="margin:6px 0; color:#334155;">${index + 1}. ${title}</li>`;
+    })
+    .join("");
+
+  const html = `
+  <div style="font-family:'Segoe UI', sans-serif; background:#f8fafc; padding:32px;">
+    <div style="max-width:520px; margin:auto; background:#ffffff; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.08); padding:32px 40px;">
+      <h2 style="color:#10B981; text-align:center; font-size:22px; margin:0 0 24px;">
+        Phiếu mượn đã được duyệt
+      </h2>
+      <p style="font-size:15px; color:#334155; margin:0 0 8px;">Xin chào <b>${userName}</b>,</p>
+      <p style="font-size:15px; color:#334155; margin:0 0 16px;">
+        Phiếu mượn <b style="color:#4F46E5;">${ticketNumber}</b> của bạn đã được duyệt.
+      </p>
+
+      <div style="background:#F0FDF4; border-left:4px solid #10B981; padding:16px; margin:16px 0; border-radius:8px;">
+        <p style="margin:0 0 8px; font-weight:600; color:#065F46;">Thông tin lấy sách:</p>
+        <p style="margin:4px 0; color:#166534;">• Ngày: <b>${pickupDate}</b></p>
+        <p style="margin:4px 0; color:#166534;">• Giờ: <b>8:00 - 17:00</b></p>
+        <p style="margin:4px 0; color:#166534;">• Địa điểm: <b>Thư viện Trường</b></p>
+      </div>
+
+      <div style="margin:20px 0;">
+        <p style="margin:0 0 8px; font-weight:600; color:#334155;">Danh sách sách:</p>
+        <ul style="padding-left:20px; margin:8px 0;">${bookList}</ul>
+      </div>
+
+      <div style="background:#FEF3C7; border-left:4px solid #F59E0B; padding:12px; margin:16px 0; border-radius:8px;">
+        <p style="margin:0; font-size:14px; color:#92400E;">
+          <b>Lưu ý:</b> Hạn trả sách là <b>${dueDate}</b>
+        </p>
+      </div>
+
+      <p style="font-size:14px; color:#64748B; line-height:1.6; margin-top:16px;">
+        Nếu không đến lấy sách trong vòng 3 ngày, phiếu mượn sẽ tự động bị hủy.
+      </p>
+    </div>
+    <p style="text-align:center; font-size:12px; color:#94a3b8; margin-top:20px;">
+      © 2025 HBH Library System
+    </p>
+  </div>
+  `;
+
+  await sendMail(to, subject, html, "borrow-approved");
+};
+
+// email cảm ơn khi trả sách
+export const sendReturnedThankYouEmail = async (
+  to: string,
+  userName: string,
+  ticketNumber: string,
+  books: Array<{ book_title?: string; title?: string }>,
+  returnDate: string
+): Promise<void> => {
+  const subject = "Cảm ơn bạn đã trả sách - Thư viện HBH";
+
+  const bookList = books
+    .map((book, index) => {
+      const title = book.book_title || book.title || "Không xác định";
+      return `<li style="margin:6px 0; color:#334155;">${index + 1}. ${title}</li>`;
+    })
+    .join("");
+
+  const html = `
+  <div style="font-family:'Segoe UI', sans-serif; background:#f8fafc; padding:32px;">
+    <div style="max-width:520px; margin:auto; background:#ffffff; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.08); padding:32px 40px;">
+      <h2 style="color:#4F46E5; text-align:center; font-size:22px; margin:0 0 24px;">
+        🎉 Cảm ơn bạn!
+      </h2>
+      <p style="font-size:15px; color:#334155; margin:0 0 8px;">Xin chào <b>${userName}</b>,</p>
+      <p style="font-size:15px; color:#334155; margin:0 0 16px;">
+        Bạn đã trả sách thành công cho phiếu mượn <b style="color:#4F46E5;">${ticketNumber}</b>.
+      </p>
+
+      <div style="background:#EEF2FF; border-left:4px solid #4F46E5; padding:16px; margin:16px 0; border-radius:8px;">
+        <p style="margin:0 0 8px; font-weight:600; color:#3730A3;">Thông tin trả sách:</p>
+        <p style="margin:4px 0; color:#4338CA;">• Ngày trả: <b>${returnDate}</b></p>
+      </div>
+
+      <div style="margin:20px 0;">
+        <p style="margin:0 0 8px; font-weight:600; color:#334155;">Danh sách sách đã trả:</p>
+        <ul style="padding-left:20px; margin:8px 0;">${bookList}</ul>
+      </div>
+
+      <p style="font-size:15px; color:#334155; line-height:1.6; margin-top:20px;">
+        Cảm ơn bạn đã tuân thủ quy định và trả sách đúng hạn. 
+        Chúc bạn có những trải nghiệm tuyệt vời với thư viện!
+      </p>
+
+      <div style="text-align:center; margin-top:24px;">
+        <p style="margin:0; color:#64748B; font-size:14px;">Hẹn gặp lại bạn!</p>
+      </div>
+    </div>
+    <p style="text-align:center; font-size:12px; color:#94a3b8; margin-top:20px;">
+      © 2025 HBH Library System
+    </p>
+  </div>
+  `;
+
+  await sendMail(to, subject, html, "return-thank-you");
 };

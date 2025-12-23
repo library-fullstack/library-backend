@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.ts";
 import ForumModerationService from "../../services/forum/moderation.service.ts";
 import ForumPostService from "../../services/forum/post.service.ts";
+import notificationService from "../../services/notification.service.ts";
 import connection from "../../config/db.ts";
 
 export const getPendingPosts = async (
@@ -50,7 +51,8 @@ export const getReports = async (req: AuthenticatedRequest, res: Response) => {
       SELECT COUNT(*) as total FROM forum_reports 
       WHERE status = ?
     `;
-    const [[{ total }]] = await connection.execute(countQuery, [status]);
+    const [countRows] = await connection.execute(countQuery, [status]);
+    const total = (countRows as any)[0].total;
 
     const query = `
       SELECT 
@@ -144,7 +146,8 @@ export const getNotifications = async (
       SELECT COUNT(*) as total FROM user_notifications 
       WHERE user_id = ?
     `;
-    const [[{ total }]] = await connection.execute(countQuery, [userId]);
+    const [countRows] = await connection.execute(countQuery, [userId]);
+    const total = (countRows as any)[0].total;
 
     const query = `
       SELECT id, user_id, ntype, payload, read_at, created_at
@@ -238,6 +241,16 @@ export const approvePostByModerator = async (
       return;
     }
 
+    if (post) {
+      await notificationService.createForumNotification(
+        post.userId,
+        "POST_APPROVED",
+        postId,
+        "Bài viết đã được duyệt",
+        `Bài viết "${post.title}" đã được duyệt và xuất bản`
+      );
+    }
+
     res.status(200).json({
       success: true,
       message: "Post approved successfully",
@@ -289,7 +302,11 @@ export const rejectPostByModerator = async (
       return;
     }
 
-    const result = await ForumModerationService.rejectPost(postId, userId);
+    const result = await ForumModerationService.rejectPost(
+      postId,
+      userId,
+      reason
+    );
 
     if (!result.success) {
       res.status(404).json({
@@ -298,6 +315,15 @@ export const rejectPostByModerator = async (
       });
       return;
     }
+
+    await notificationService.createForumNotification(
+      post.userId,
+      "POST_REJECTED",
+      postId,
+      "Bài viết bị từ chối",
+      `Bài viết "${post.title}" đã bị từ chối`,
+      { rejection_reason: reason }
+    );
 
     res.status(200).json({
       success: true,

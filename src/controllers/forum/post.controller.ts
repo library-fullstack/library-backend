@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
 import ForumPostService from "../../services/forum/post.service.ts";
+import activityLogService from "../../services/activityLog.service.ts";
+import notificationService from "../../services/notification.service.ts";
+import { ActivityType } from "../../models/activityLog.model.ts";
+import connection from "../../config/db.ts";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.ts";
 
 export const createPost = async (req: AuthenticatedRequest, res: Response) => {
@@ -52,6 +56,17 @@ export const createPost = async (req: AuthenticatedRequest, res: Response) => {
         ? "Bài viết được đăng ngay lập tức"
         : "Bài viết sẽ hiển thị sau khi được duyệt";
 
+    await activityLogService.create({
+      user_id: userId,
+      type: ActivityType.FORUM,
+      action: "CREATE_POST",
+      target_type: "FORUM_POST",
+      target_id: post.id.toString(),
+      description: `Tạo bài viết: ${title.trim().substring(0, 50)}${title.length > 50 ? "..." : ""}`,
+      ip_address: req.ip || (req.socket as any).remoteAddress,
+      user_agent: req.get("user-agent"),
+    });
+
     res.status(201).json({
       success: true,
       message,
@@ -74,13 +89,10 @@ export const getPosts = async (req: Request, res: Response) => {
     const categoryId = req.query.categoryId
       ? parseInt(req.query.categoryId as string)
       : undefined;
-    const sortBy = (req.query.sort as string) || "newest"; // newest, trending, most-comments
+    const sortBy = (req.query.sort as string) || "newest";
     const search = (req.query.search as string) || "";
 
-    // Get current user ID if authenticated
     const userId = (req as AuthenticatedRequest).userId;
-
-    console.log("getPosts - userId:", userId, "categoryId:", categoryId);
 
     const posts = await ForumPostService.getPosts({
       page,
@@ -88,11 +100,10 @@ export const getPosts = async (req: Request, res: Response) => {
       categoryId,
       sortBy,
       search,
-      status: "APPROVED", // Show approved posts to everyone
-      userId: userId as string | undefined, // Also show user's own PENDING posts if authenticated
+      status: "APPROVED",
+      userId: userId as string | undefined,
+      includeUserPending: true,
     });
-
-    console.log("getPosts - posts.data length:", posts.data?.length);
 
     res.status(200).json({
       success: true,
@@ -110,6 +121,35 @@ export const getPosts = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch posts",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const getMyPosts = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+
+    const query = `
+      SELECT 
+        id, title, status, created_at, rejection_reason
+      FROM forum_posts
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+    `;
+
+    const [rows] = await connection.execute(query, [userId]);
+
+    res.status(200).json({
+      success: true,
+      message: "My posts retrieved successfully",
+      data: rows,
+    });
+  } catch (error) {
+    console.error("Error fetching my posts:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch my posts",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }
@@ -169,7 +209,6 @@ export const updatePost = async (req: AuthenticatedRequest, res: Response) => {
       return;
     }
 
-    // Get post to check ownership
     const post = await ForumPostService.getPostById(postId);
     if (!post) {
       res.status(404).json({
@@ -187,7 +226,6 @@ export const updatePost = async (req: AuthenticatedRequest, res: Response) => {
       return;
     }
 
-    // Validation
     if (title && (title.length < 5 || title.length > 200)) {
       res.status(400).json({
         success: false,
@@ -249,7 +287,6 @@ export const deletePost = async (req: AuthenticatedRequest, res: Response) => {
       return;
     }
 
-    // Only post owner or ADMIN can delete
     if (post.userId !== userId && userRole !== "ADMIN") {
       res.status(403).json({
         success: false,
@@ -280,10 +317,7 @@ export const likePost = async (req: AuthenticatedRequest, res: Response) => {
     const postId = parseInt(id);
     const userId = req.userId!;
 
-    console.log("[likePost] START: postId=", postId, "userId=", userId);
-
     if (isNaN(postId)) {
-      console.log("[likePost] Invalid postId");
       res.status(400).json({
         success: false,
         message: "Invalid post ID",
@@ -292,7 +326,6 @@ export const likePost = async (req: AuthenticatedRequest, res: Response) => {
     }
 
     if (!userId) {
-      console.log("[likePost] No userId");
       res.status(401).json({
         success: false,
         message: "User not authenticated",
@@ -300,10 +333,8 @@ export const likePost = async (req: AuthenticatedRequest, res: Response) => {
       return;
     }
 
-    console.log("[likePost] Getting post before like toggle");
     const post = await ForumPostService.getPostById(postId, userId);
     if (!post) {
-      console.log("[likePost] Post not found:", postId);
       res.status(404).json({
         success: false,
         message: "Post not found",
@@ -311,27 +342,24 @@ export const likePost = async (req: AuthenticatedRequest, res: Response) => {
       return;
     }
 
-    console.log("[likePost] Post before toggle:", {
-      id: post.id,
-      is_liked: post.is_liked,
-      likes_count: post.likes_count,
-    });
-
     const liked = await ForumPostService.toggleLike(postId, userId);
-    console.log("[likePost] Toggle result: liked=", liked);
+
+    if (liked && post.userId !== userId) {
+      await notificationService.createForumNotification(
+        post.userId,
+        "POST_LIKED",
+        postId,
+        "Có người thích bài viết của bạn",
+        `Bài viết "${post.title}" nhận được lượt thích mới`
+      );
+    }
 
     const updatedPost = await ForumPostService.getPostById(postId, userId);
-    console.log("[likePost] Post after toggle:", {
-      id: updatedPost?.id,
-      is_liked: updatedPost?.is_liked,
-      likes_count: updatedPost?.likes_count,
-    });
 
     const responseData = {
       is_liked: liked,
       likes_count: updatedPost?.likes_count || 0,
     };
-    console.log("[likePost] Sending response:", responseData);
 
     res.status(200).json({
       success: true,
