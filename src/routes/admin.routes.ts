@@ -27,7 +27,7 @@ router.patch(
 router.get(
   "/",
   authMiddleware,
-  authorize("ADMIN"),
+  authorize("ADMIN", "LIBRARIAN"),
   adminController.adminGetAllUserController
 );
 
@@ -44,12 +44,20 @@ router.post(
 router.get(
   "/:user_id",
   authMiddleware,
-  authorize("ADMIN"),
+  authorize("ADMIN", "LIBRARIAN"),
   adminController.adminGetUserByIdController
 );
 
 // cập nhật thông tin user
 router.patch(
+  "/:user_id",
+  authMiddleware,
+  authorize("ADMIN"),
+  invalidateCacheMiddleware(["admin:*"]),
+  adminController.adminUpdateUserByIdController
+);
+
+router.put(
   "/:user_id",
   authMiddleware,
   authorize("ADMIN"),
@@ -65,13 +73,5 @@ router.delete(
   invalidateCacheMiddleware(["admin:*"]),
   adminController.adminDeleteUserByIdController
 );
-
-// đổi avatar user
-// router.patch(
-//   "/:user_id/avatar",
-//   authMiddleware,
-//   uploadMiddleware.single("avatar"),
-//   userController.updateUserAvatarByIdController
-// );
 
 export default router;

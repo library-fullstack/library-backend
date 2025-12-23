@@ -9,29 +9,53 @@ const adminGetAllUserController = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, role, search } = req.query;
     const pageNum = Math.max(1, Number(page));
     const limitNum = Math.min(100, Math.max(1, Number(limit)));
 
-    const result = await adminServices.adminGetAllUser(pageNum, limitNum);
+    const result = await adminServices.adminGetAllUser(pageNum, limitNum, {
+      role: role as string,
+      search: search as string,
+    });
 
     if (!result.users || result.users.length === 0) {
       res.status(200).json({
-        users: [],
-        total: 0,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: 0,
+        success: true,
+        data: [],
+        pagination: {
+          total: 0,
+          page: pageNum,
+          limit: limitNum,
+        },
       });
       return;
     }
 
+    const mappedUsers = result.users.map((user: any) => {
+      console.log(
+        `[Admin Users] Mapping user ${user.email}: role=${user.role}`
+      );
+      return {
+        id: user.id,
+        email: user.email,
+        fullname: user.full_name,
+        student_id: user.student_id,
+        phone: user.phone,
+        role: user.role === "STUDENT" ? "USER" : user.role,
+        is_active: user.status === "ACTIVE",
+        created_at: user.created_at,
+        avatar_url: user.avatar_url,
+      };
+    });
+
     res.json({
-      users: result.users,
-      total: result.total,
-      page: pageNum,
-      limit: limitNum,
-      totalPages: Math.ceil(result.total / limitNum),
+      success: true,
+      data: mappedUsers,
+      pagination: {
+        total: result.total,
+        page: pageNum,
+        limit: limitNum,
+      },
     });
   } catch (error) {
     const err = error as ApiError;
@@ -132,7 +156,30 @@ const adminUpdateUserByIdController = async (
       avatar_url,
     });
 
-    res.status(200).json({ message: "Cập nhật người dùng thành công" });
+    const updatedUser = await adminServices.adminGetUserById(user_id);
+
+    if (!updatedUser) {
+      res
+        .status(404)
+        .json({ message: "Không tìm thấy người dùng sau khi cập nhật" });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Cập nhật người dùng thành công",
+      data: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        fullname: updatedUser.full_name,
+        student_id: updatedUser.student_id,
+        phone: updatedUser.phone,
+        role: updatedUser.role === "STUDENT" ? "USER" : updatedUser.role,
+        is_active: updatedUser.status === "ACTIVE",
+        created_at: updatedUser.created_at,
+        avatar_url: updatedUser.avatar_url,
+      },
+    });
   } catch (err) {
     const error = err as ApiError;
     console.error("AdminUpdateUserByIdController: ", error);
@@ -152,7 +199,10 @@ const adminDeleteUserByIdController = async (req: Request, res: Response) => {
 
     await adminServices.adminDeleteUserById(user_id);
 
-    res.status(200).json({ message: "Xoá thành công người dùng" });
+    res.status(200).json({
+      success: true,
+      message: "Xóa người dùng thành công",
+    });
   } catch (err) {
     const error = err as ApiError;
     res.status(400).json({ message: error.message });

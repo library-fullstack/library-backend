@@ -11,6 +11,7 @@ const authorize =
   (...allowedRoles: string[]) =>
   (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
+      console.log("[Authorize] No user in request");
       return res
         .status(401)
         .json({ message: "Chưa đăng nhập hoặc token không hợp lệ" });
@@ -18,12 +19,21 @@ const authorize =
 
     const { role } = req.user;
 
+    console.log(
+      "[Authorize] User role:",
+      role,
+      "| Allowed roles:",
+      allowedRoles
+    );
+
     if (!allowedRoles.includes(role)) {
+      console.log("[Authorize] Access denied - role mismatch");
       return res
         .status(403)
         .json({ message: "Bạn không đủ quyền để thực hiện thao tác này" });
     }
 
+    console.log("[Authorize] Access granted");
     next();
   };
 

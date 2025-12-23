@@ -12,14 +12,14 @@ const router = express.Router();
 router.get(
   "/dashboard",
   authMiddleware,
-  authorize("ADMIN"),
+  authorize("ADMIN", "LIBRARIAN"),
   statisticsController.getDashboardStatsController
 );
 
 router.get(
   "/books",
   authMiddleware,
-  authorize("ADMIN"),
+  authorize("ADMIN", "LIBRARIAN"),
   statisticsController.getBookManagementController
 );
 
@@ -33,14 +33,14 @@ router.get(
 router.get(
   "/borrows",
   authMiddleware,
-  authorize("ADMIN"),
+  authorize("ADMIN", "LIBRARIAN"),
   statisticsController.getBorrowManagementController
 );
 
 router.patch(
   "/borrows/:borrow_id",
   authMiddleware,
-  authorize("ADMIN"),
+  authorize("ADMIN", "LIBRARIAN"),
   statisticsController.updateBorrowStatusController
 );
 

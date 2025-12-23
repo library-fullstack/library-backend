@@ -5,9 +5,27 @@ import { hashPassword } from "../utils/password.ts";
 
 const adminGetAllUser = async (
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  filters?: { role?: string; search?: string }
 ): Promise<{ users: userModel.User[]; total: number }> => {
   const offset = (page - 1) * limit;
+
+  let whereClause = "";
+  const params: any[] = [];
+
+  if (filters?.role) {
+    const backendRole = filters.role === "USER" ? "STUDENT" : filters.role;
+    whereClause += " WHERE u.role = ?";
+    params.push(backendRole);
+  }
+
+  if (filters?.search) {
+    whereClause += whereClause ? " AND" : " WHERE";
+    whereClause +=
+      " (u.full_name LIKE ? OR u.email LIKE ? OR u.student_id LIKE ?)";
+    const searchTerm = `%${filters.search}%`;
+    params.push(searchTerm, searchTerm, searchTerm);
+  }
 
   const [rows] = await connection.query<any[]>(
     `
@@ -27,14 +45,16 @@ const adminGetAllUser = async (
       s.admission_year
     FROM users u
     LEFT JOIN students s ON s.student_id = u.student_id
+    ${whereClause}
     ORDER BY u.created_at DESC
     LIMIT ? OFFSET ?
     `,
-    [limit, offset]
+    [...params, limit, offset]
   );
 
   const [countResult] = await connection.query<any[]>(
-    `SELECT COUNT(*) as total FROM users`
+    `SELECT COUNT(*) as total FROM users u ${whereClause}`,
+    params
   );
   const total = countResult[0]?.total || 0;
 

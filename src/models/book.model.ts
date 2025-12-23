@@ -38,6 +38,7 @@ type BookInput = {
 
 type BookInputFull = BookInput & {
   status?: "ACTIVE" | "INACTIVE" | "DRAFT";
+  author?: string[] | null;
 };
 
 export { Book, BookInput, BookInputFull };

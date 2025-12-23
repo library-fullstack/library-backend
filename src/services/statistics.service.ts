@@ -13,6 +13,10 @@ interface DashboardStats {
   booksAddedThisMonth: number;
   usersJoinedThisMonth: number;
   borrowsThisMonth: number;
+  booksAddedLastMonth: number;
+  usersJoinedLastMonth: number;
+  borrowsLastMonth: number;
+  overdueLastMonth: number;
   popularCategories: Array<{
     category_id: number;
     category_name: string;
@@ -36,6 +40,12 @@ interface DashboardStats {
     storageUsage: number;
     apiResponseTime: number;
   };
+  growthRates: {
+    books: number;
+    users: number;
+    borrows: number;
+    overdue: number;
+  };
 }
 
 const getDashboardStatistics = async (): Promise<DashboardStats> => {
@@ -44,6 +54,11 @@ const getDashboardStatistics = async (): Promise<DashboardStats> => {
     startMonth.setDate(1);
     startMonth.setHours(0, 0, 0, 0);
 
+    const startLastMonth = new Date(startMonth);
+    startLastMonth.setMonth(startLastMonth.getMonth() - 1);
+
+    const endLastMonth = new Date(startMonth);
+
     const [countsResult] = await connection.query<RowDataPacket[]>(
       `SELECT
         (SELECT COUNT(*) FROM books) as total_books,
@@ -51,9 +66,18 @@ const getDashboardStatistics = async (): Promise<DashboardStats> => {
         (SELECT COUNT(*) FROM users) as total_users,
         (SELECT COUNT(*) FROM book_categories) as total_categories,
         (SELECT COUNT(*) FROM publishers) as total_publishers,
-        (SELECT COUNT(*) FROM books WHERE created_at >= ?) as books_added_this_month,
-        (SELECT COUNT(*) FROM users WHERE created_at >= ?) as users_joined_this_month`,
-      [startMonth, startMonth]
+        (SELECT COUNT(*) FROM books WHERE created_at >= ? AND created_at < NOW()) as books_added_this_month,
+        (SELECT COUNT(*) FROM users WHERE created_at >= ? AND created_at < NOW()) as users_joined_this_month,
+        (SELECT COUNT(*) FROM books WHERE created_at >= ? AND created_at < ?) as books_added_last_month,
+        (SELECT COUNT(*) FROM users WHERE created_at >= ? AND created_at < ?) as users_joined_last_month`,
+      [
+        startMonth,
+        startMonth,
+        startLastMonth,
+        endLastMonth,
+        startLastMonth,
+        endLastMonth,
+      ]
     );
 
     const counts = countsResult[0];
@@ -64,21 +88,27 @@ const getDashboardStatistics = async (): Promise<DashboardStats> => {
     const totalPublishers = counts?.total_publishers || 0;
     const booksAddedThisMonth = counts?.books_added_this_month || 0;
     const usersJoinedThisMonth = counts?.users_joined_this_month || 0;
+    const booksAddedLastMonth = counts?.books_added_last_month || 0;
+    const usersJoinedLastMonth = counts?.users_joined_last_month || 0;
 
     let totalBorrows = 0;
     let activeBorrows = 0;
     let overdueBorrows = 0;
     let borrowsThisMonth = 0;
+    let borrowsLastMonth = 0;
+    let overdueLastMonth = 0;
     let recentBorrowsResult: RowDataPacket[] = [];
 
     try {
       const [borrowCountsResult] = await connection.query<RowDataPacket[]>(
         `SELECT
           (SELECT COUNT(*) FROM borrows) as total_borrows,
-          (SELECT COUNT(*) FROM borrows WHERE status = 'BORROWED') as active_borrows,
-          (SELECT COUNT(*) FROM borrows WHERE status = 'BORROWED' AND due_date < NOW()) as overdue_borrows,
-          (SELECT COUNT(*) FROM borrows WHERE borrowed_at >= ?) as borrows_this_month`,
-        [startMonth]
+          (SELECT COUNT(*) FROM borrows WHERE status IN ('ACTIVE', 'APPROVED', 'CONFIRMED')) as active_borrows,
+          (SELECT COUNT(*) FROM borrows WHERE status IN ('ACTIVE', 'APPROVED', 'CONFIRMED') AND due_date < CURDATE()) as overdue_borrows,
+          (SELECT COUNT(*) FROM borrows WHERE borrow_date >= ? AND borrow_date < NOW()) as borrows_this_month,
+          (SELECT COUNT(*) FROM borrows WHERE borrow_date >= ? AND borrow_date < ?) as borrows_last_month,
+          (SELECT COUNT(*) FROM borrows WHERE status IN ('ACTIVE', 'APPROVED', 'CONFIRMED') AND due_date < ? AND due_date >= ?) as overdue_last_month`,
+        [startMonth, startLastMonth, endLastMonth, endLastMonth, startLastMonth]
       );
 
       const borrowCounts = borrowCountsResult[0];
@@ -86,22 +116,24 @@ const getDashboardStatistics = async (): Promise<DashboardStats> => {
       activeBorrows = borrowCounts?.active_borrows || 0;
       overdueBorrows = borrowCounts?.overdue_borrows || 0;
       borrowsThisMonth = borrowCounts?.borrows_this_month || 0;
+      borrowsLastMonth = borrowCounts?.borrows_last_month || 0;
+      overdueLastMonth = borrowCounts?.overdue_last_month || 0;
 
       [recentBorrowsResult] = await connection.query<RowDataPacket[]>(
         `SELECT
           b.id,
           bk.title as book_title,
           u.full_name as user_name,
-          b.borrowed_at,
+          b.borrow_date as borrowed_at,
           b.due_date,
           CASE
-            WHEN b.status = 'BORROWED' AND b.due_date < NOW() THEN 'OVERDUE'
+            WHEN b.status IN ('ACTIVE', 'APPROVED', 'CONFIRMED') AND b.due_date < CURDATE() THEN 'OVERDUE'
             ELSE b.status
           END as status
         FROM borrows b
         JOIN books bk ON b.book_id = bk.id
         JOIN users u ON b.user_id = u.id
-        ORDER BY b.borrowed_at DESC
+        ORDER BY b.borrow_date DESC
         LIMIT 10`
       );
     } catch (borrowError) {
@@ -176,6 +208,18 @@ const getDashboardStatistics = async (): Promise<DashboardStats> => {
       console.log("Error fetching popular categories:", categoryError);
     }
 
+    const calculateGrowth = (current: number, previous: number): number => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Number((((current - previous) / previous) * 100).toFixed(1));
+    };
+
+    const growthRates = {
+      books: calculateGrowth(booksAddedThisMonth, booksAddedLastMonth),
+      users: calculateGrowth(usersJoinedThisMonth, usersJoinedLastMonth),
+      borrows: calculateGrowth(borrowsThisMonth, borrowsLastMonth),
+      overdue: calculateGrowth(overdueBorrows, overdueLastMonth),
+    };
+
     return {
       totalBooks,
       activeBooks,
@@ -188,6 +232,11 @@ const getDashboardStatistics = async (): Promise<DashboardStats> => {
       booksAddedThisMonth,
       usersJoinedThisMonth,
       borrowsThisMonth,
+      booksAddedLastMonth,
+      usersJoinedLastMonth,
+      borrowsLastMonth,
+      overdueLastMonth,
+      growthRates,
       popularCategories: popularCategoriesResult.map((row) => ({
         category_id: row.category_id,
         category_name: row.category_name,
@@ -239,7 +288,13 @@ const getBorrowManagement = async (params: BorrowManagementParams) => {
 
     if (status) {
       if (status === "OVERDUE") {
-        whereConditions.push("br.status = 'BORROWED' AND br.due_date < NOW()");
+        whereConditions.push(
+          "br.status IN ('ACTIVE', 'APPROVED', 'CONFIRMED') AND br.due_date < CURDATE()"
+        );
+      } else if (status === "ACTIVE" || status === "BORROWED") {
+        whereConditions.push(
+          "br.status IN ('ACTIVE', 'APPROVED', 'CONFIRMED')"
+        );
       } else {
         whereConditions.push("br.status = ?");
         queryParams.push(status);
@@ -269,18 +324,18 @@ const getBorrowManagement = async (params: BorrowManagementParams) => {
         br.user_id,
         u.full_name as user_name,
         u.student_id,
-        br.borrowed_at,
+        br.borrow_date as borrowed_at,
         br.due_date,
-        br.returned_at,
+        br.return_date as returned_at,
         CASE 
-          WHEN br.status = 'BORROWED' AND br.due_date < NOW() THEN 'OVERDUE'
+          WHEN br.status IN ('ACTIVE', 'APPROVED', 'CONFIRMED') AND br.due_date < CURDATE() THEN 'OVERDUE'
           ELSE br.status
         END as status
        FROM borrows br
        JOIN books b ON br.book_id = b.id
        JOIN users u ON br.user_id = u.id
        ${whereClause}
-       ORDER BY br.borrowed_at DESC
+       ORDER BY br.borrow_date DESC
        LIMIT ? OFFSET ?`,
       [...queryParams, limit, offset]
     );

@@ -6,8 +6,8 @@ import { v4 as uuidv4 } from "uuid";
 
 const JWT_SECRET = requireEnv("JWT_SECRET");
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || JWT_SECRET;
-const ACCESS_TOKEN_EXPIRY = "15m"; // 15 minutes
-const REFRESH_TOKEN_EXPIRY = "7d"; // 7 days
+const ACCESS_TOKEN_EXPIRY = "1h";
+const REFRESH_TOKEN_EXPIRY = "30d";
 
 interface TokenPayload {
   userId: string;

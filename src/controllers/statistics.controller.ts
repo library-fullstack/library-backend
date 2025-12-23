@@ -4,7 +4,6 @@ import statisticsService from "../services/statistics.service.ts";
 const getDashboardStatsController = async (req: Request, res: Response) => {
   try {
     const stats = await statisticsService.getDashboardStatistics();
-    console.log("[getDashboardStatsController] Stats:", stats);
     res.status(200).json(stats);
   } catch (error: any) {
     console.error("[getDashboardStatsController]", error);

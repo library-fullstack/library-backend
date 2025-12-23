@@ -4,37 +4,87 @@ import {
   cacheMiddleware,
   invalidateCacheMiddleware,
 } from "../../middlewares/cache.middleware.ts";
+import { verifyAccessToken } from "../../utils/token.ts";
+import {
+  createPost,
+  getPosts,
+  getMyPosts,
+  getPostById,
+  updatePost,
+  deletePost,
+  likePost,
+  reportPost,
+} from "../../controllers/forum/post.controller.ts";
+import { ForumCommentController } from "../../controllers/forum/comment.controller.ts";
+import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.ts";
 
 const router = Router();
 
-// Placeholder routes - implement later
-router.get(
-  "/",
-  authMiddleware,
-  cacheMiddleware(300, "forum:posts"),
-  async (req, res) => {
-    // TODO: Implement get all posts
-    res.json({ message: "Forum posts endpoint - coming soon", posts: [] });
+const optionalAuth = (req: any, res: any, next: any) => {
+  const header = req.headers.authorization;
+  if (header && header.startsWith("Bearer ")) {
+    const token = header.split(" ")[1];
+    try {
+      const decoded = verifyAccessToken(token);
+      if (decoded) {
+        req.userId = decoded.userId;
+        (req as any).user = {
+          id: decoded.userId,
+          email: decoded.email,
+          role: decoded.role,
+        };
+      }
+    } catch (err) {}
   }
-);
+  next();
+};
 
-router.get(
-  "/:id",
-  authMiddleware,
-  cacheMiddleware(300, "forum:post:detail"),
-  async (req, res) => {
-    // TODO: Implement get post by id
-    res.json({ message: "Forum post detail - coming soon", post: null });
-  }
-);
+router.get("/", optionalAuth, cacheMiddleware(300, "forum:posts"), getPosts);
+
+router.get("/my-posts", authMiddleware, getMyPosts);
 
 router.post(
   "/",
   authMiddleware,
   invalidateCacheMiddleware(["forum:*"]),
-  async (req, res) => {
-    // TODO: Implement create post
-    res.status(501).json({ message: "Create post - not implemented yet" });
+  createPost
+);
+
+router.get("/:id", getPostById);
+
+router.patch(
+  "/:id",
+  authMiddleware,
+  invalidateCacheMiddleware(["forum:*"]),
+  updatePost
+);
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  invalidateCacheMiddleware(["forum:*"]),
+  deletePost
+);
+
+router.post(
+  "/:id/like",
+  authMiddleware,
+  invalidateCacheMiddleware(["forum:*"]),
+  likePost
+);
+
+router.post(
+  "/:id/report",
+  authMiddleware,
+  invalidateCacheMiddleware(["forum:reports"]),
+  reportPost
+);
+
+router.get(
+  "/:id/comments",
+  cacheMiddleware(300, "forum:comments:post:"),
+  async (req: AuthenticatedRequest, res) => {
+    await ForumCommentController.getCommentsByPost(req, res);
   }
 );
 

@@ -15,10 +15,6 @@ export const BorrowCartController = {
       const { items, summary } =
         await BorrowCartService.getCartWithSummary(userId);
 
-      console.log(
-        `[getCart] User ${userId} has ${items?.length || 0} items in cart`
-      );
-
       res.json({
         success: true,
         data: {
@@ -38,20 +34,12 @@ export const BorrowCartController = {
       const userId = (req as any).user?.id;
       const { bookId, quantity } = req.body;
 
-      console.log(
-        `[addItem] Received: bookId=${bookId}, quantity=${quantity}, userId=${userId}`
-      );
-
       if (!userId) {
-        console.log(`[addItem] No userId`);
         res.status(401).json({ success: false, message: "Unauthorized" });
         return;
       }
 
       if (!bookId || quantity === undefined || quantity < 1) {
-        console.log(
-          `[addItem] Invalid params: bookId=${bookId}, quantity=${quantity}`
-        );
         res.status(400).json({
           success: false,
           message: "Invalid request: bookId and quantity required",
@@ -75,7 +63,6 @@ export const BorrowCartController = {
       console.error("Error adding item to cart:", error);
 
       if (err.code === "OUT_OF_STOCK") {
-        console.log(`[addItem] OUT_OF_STOCK: ${err.message}`);
         return res.status(400).json({
           success: false,
           message: err.message,
@@ -84,7 +71,6 @@ export const BorrowCartController = {
       }
 
       if (err.code === "EXCEEDS_AVAILABILITY") {
-        console.log(`[addItem] EXCEEDS_AVAILABILITY: ${err.message}`);
         return res.status(400).json({
           success: false,
           message: err.message,
@@ -92,9 +78,7 @@ export const BorrowCartController = {
         });
       }
 
-      // Handle database duplicate entry error
       if (err.code === "ER_DUP_ENTRY") {
-        console.log(`[addItem] ER_DUP_ENTRY`);
         return res.status(409).json({
           success: false,
           message:
@@ -103,9 +87,6 @@ export const BorrowCartController = {
       }
 
       if (err.code === "ER_LOCK_DEADLOCK") {
-        console.log(
-          `[addItem] DEADLOCK detected - instructing client to retry`
-        );
         return res.status(409).json({
           success: false,
           message:
@@ -152,7 +133,6 @@ export const BorrowCartController = {
       console.error("Error updating cart item:", error);
 
       if (err.code === "OUT_OF_STOCK") {
-        console.log(`[updateQuantity] OUT_OF_STOCK: ${err.message}`);
         return res.status(400).json({
           success: false,
           message: err.message,
@@ -161,7 +141,6 @@ export const BorrowCartController = {
       }
 
       if (err.code === "EXCEEDS_AVAILABILITY") {
-        console.log(`[updateQuantity] EXCEEDS_AVAILABILITY: ${err.message}`);
         return res.status(400).json({
           success: false,
           message: err.message,
@@ -170,9 +149,6 @@ export const BorrowCartController = {
       }
 
       if (err.code === "ER_LOCK_DEADLOCK") {
-        console.log(
-          `[updateQuantity] DEADLOCK detected - instructing client to retry`
-        );
         return res.status(409).json({
           success: false,
           message:

@@ -1,0 +1,7 @@
+.github
+dist
+.vscode
+claude
+node_modules
+*.txt
+*.md

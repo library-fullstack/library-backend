@@ -11,3 +11,5 @@ export * as borrowDetailModel from "./borrowDetail.model.ts";
 export * as borrowCartModel from "./borrowCart.model.ts";
 export * as bannerModel from "./banner.model.ts";
 export * as settingsModel from "./settings.model.ts";
+export * as newsModel from "./news.model.ts";
+export * as eventsModel from "./events.model.ts";

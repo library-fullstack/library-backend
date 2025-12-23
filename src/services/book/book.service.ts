@@ -1,7 +1,7 @@
 import connection from "../../config/db.ts";
 import { Book, BookInput, BookInputFull } from "../../models/book.model.ts";
 import { BookFilters, isValidBookSort } from "../../types/common.ts";
-import { RowDataPacket } from "mysql2";
+import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 const getAllBooks = async (filters?: BookFilters): Promise<Book[]> => {
   let orderByClause =
@@ -156,7 +156,7 @@ const getBookById = async (bookId: number): Promise<Book | null> => {
   return rows.length > 0 ? rows[0] : null;
 };
 
-const createBook = async (book: BookInputFull): Promise<void> => {
+const createBook = async (book: BookInputFull): Promise<number> => {
   const sql = `
     INSERT INTO books (
       title, category_id, publisher_id, publication_year,
@@ -168,7 +168,7 @@ const createBook = async (book: BookInputFull): Promise<void> => {
       thumbnail_url = COALESCE(VALUES(thumbnail_url), thumbnail_url),
       updated_at = CURRENT_TIMESTAMP
   `;
-  await connection.query(sql, [
+  const [result] = await connection.query<ResultSetHeader>(sql, [
     book.title,
     book.categoryId ?? null,
     book.publisherId ?? null,
@@ -181,6 +181,8 @@ const createBook = async (book: BookInputFull): Promise<void> => {
     book.description ?? null,
     book.thumbnailUrl ?? null,
   ]);
+
+  return result.insertId;
 };
 
 const updateBookById = async (

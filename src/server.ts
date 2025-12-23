@@ -4,9 +4,13 @@ import fs from "fs";
 import path from "path";
 import app from "./app.ts";
 import { env } from "./config/env.ts";
+import { startBorrowReminderJob } from "./jobs/borrowReminder.job.ts";
 
 const useHttps =
   fs.existsSync("origin.pem") && fs.existsSync("origin-private.pem");
+
+console.log("[SERVER] Bắt đầu công việc định kỳ...");
+startBorrowReminderJob();
 
 if (useHttps) {
   const options = {
