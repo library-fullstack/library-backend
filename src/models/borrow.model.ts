@@ -10,6 +10,18 @@ export enum BorrowStatus {
   OVERDUE = "OVERDUE",
 }
 
+export enum ReturnReason {
+  GOOD_CONDITION = "GOOD_CONDITION",
+  DAMAGED = "DAMAGED",
+  LOST = "LOST",
+  WORN = "WORN",
+  WATER_DAMAGED = "WATER_DAMAGED",
+  WRITTEN_ON = "WRITTEN_ON",
+  STAINED = "STAINED",
+  DETERIORATED = "DETERIORATED",
+  OTHER = "OTHER",
+}
+
 export interface Borrow extends RowDataPacket {
   id: number;
   user_id: string;
@@ -41,6 +53,7 @@ export interface BorrowWithDetails extends Borrow {
     isbn?: string;
     barcode?: string;
   }>;
+  return_reasons?: ReturnReason[];
 }
 
 export interface CreateBorrowInput {

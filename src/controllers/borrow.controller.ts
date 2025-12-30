@@ -8,7 +8,7 @@ import {
   sendBorrowApprovedEmail,
   sendReturnedThankYouEmail,
 } from "../utils/emailTemplates.ts";
-import { BorrowStatus } from "../models/borrow.model.ts";
+import { BorrowStatus, ReturnReason } from "../models/borrow.model.ts";
 import { format, addDays } from "date-fns";
 import { vi } from "date-fns/locale";
 import connection from "../config/db.ts";
@@ -304,10 +304,11 @@ export const BorrowController = {
 
       const statusLabels: Record<string, string> = {
         PENDING: "chờ duyệt",
+        CONFIRMED: "đã xác nhận",
         APPROVED: "đã duyệt",
-        REJECTED: "từ chối",
-        BORROWED: "đã mượn",
+        ACTIVE: "đang mượn",
         RETURNED: "đã trả",
+        CANCELLED: "đã hủy",
         OVERDUE: "quá hạn",
       };
 
@@ -340,35 +341,6 @@ export const BorrowController = {
             "Phiếu mượn bị từ chối",
             `Phiếu mượn #${id} của bạn đã bị từ chối.`
           );
-        }
-      }
-
-      if (status === BorrowStatus.RETURNED) {
-        try {
-          const borrow = await BorrowService.getBorrowById(Number(id));
-          if (borrow) {
-            const dueDate = new Date(borrow.due_date);
-            const returnDate = new Date();
-            const daysOverdue = Math.floor(
-              (returnDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
-            );
-
-            if (daysOverdue >= 3) {
-              const bookCount = borrow.items?.length || 1;
-              const fineAmount = daysOverdue * bookCount * 2000;
-
-              await connection.query(
-                "UPDATE borrows SET fine = ? WHERE id = ?",
-                [fineAmount, Number(id)]
-              );
-
-              console.log(
-                `[FINE] Borrow #${id}: ${daysOverdue} days overdue, ${bookCount} books, fine = ${fineAmount} VND`
-              );
-            }
-          }
-        } catch (fineError: any) {
-          console.error("Error calculating fine:", fineError);
         }
       }
 
@@ -409,17 +381,6 @@ export const BorrowController = {
               pickupDate,
               dueDate
             );
-          } else if (status === BorrowStatus.RETURNED) {
-            const returnDate = format(new Date(), "dd/MM/yyyy", { locale: vi });
-            const ticketNumber = `BRW-${borrow.id.toString().padStart(6, "0")}`;
-
-            await sendReturnedThankYouEmail(
-              borrow.email,
-              borrow.fullname,
-              ticketNumber,
-              borrow.items || [],
-              returnDate
-            );
           }
         }
       } catch (emailError: any) {
@@ -435,6 +396,170 @@ export const BorrowController = {
       res.status(500).json({
         success: false,
         message: error.message || "Có lỗi xảy ra khi cập nhật trạng thái",
+      });
+    }
+  },
+
+  async returnBorrow(req: AuthRequest, res: Response) {
+    try {
+      const adminId = (req as any).user?.id;
+      const { id } = req.params;
+      const { returnReasons } = req.body;
+
+      if (!adminId)
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+
+      if (
+        !Array.isArray(returnReasons) ||
+        returnReasons.length === 0 ||
+        !returnReasons.every((r) => Object.values(ReturnReason).includes(r))
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Danh sách tình trạng trả sách không hợp lệ",
+        });
+      }
+
+      const result = await BorrowService.returnBorrow(
+        Number(id),
+        returnReasons,
+        adminId
+      );
+
+      const ticketNumber = `BRW-${id.toString().padStart(6, "0")}`;
+      const returnDate = format(new Date(), "dd/MM/yyyy", { locale: vi });
+
+      try {
+        await sendReturnedThankYouEmail(
+          result.emailData.email,
+          result.emailData.fullname,
+          ticketNumber,
+          result.emailData.items,
+          returnDate,
+          result.emailData.return_reasons
+        );
+      } catch (mailErr) {
+        console.error("Send return email failed:", mailErr);
+      }
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+      });
+    } catch (e: any) {
+      res.status(500).json({
+        success: false,
+        message: e.message || "Có lỗi khi trả sách",
+      });
+    }
+  },
+
+  async getTopBorrowedBooks(req: AuthRequest, res: Response) {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const query = `
+        SELECT 
+          b.id,
+          b.title,
+          b.thumbnail_url,
+          COUNT(bd.id) as borrow_count
+        FROM books b
+        LEFT JOIN book_copies bc ON bc.book_id = b.id
+        LEFT JOIN borrow_details bd ON bd.copy_id = bc.id
+        LEFT JOIN borrows br ON br.id = bd.borrow_id
+        WHERE br.status IN ('ACTIVE', 'RETURNED', 'APPROVED')
+        GROUP BY b.id
+        ORDER BY borrow_count DESC
+        LIMIT ?
+      `;
+
+      const [results] = await connection.query(query, [limit]);
+      const books = results as any[];
+
+      res.status(200).json({
+        success: true,
+        data: books,
+      });
+    } catch (error: any) {
+      console.error("Error getting top borrowed books:", error);
+      res.status(500).json({
+        success: false,
+        message: "Có lỗi xảy ra khi tải danh sách sách mượn nhiều",
+      });
+    }
+  },
+
+  async getTopBorrowedCategories(req: AuthRequest, res: Response) {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const query = `
+        SELECT 
+          c.id,
+          c.name,
+          COUNT(bd.id) as borrow_count,
+          COUNT(DISTINCT b.id) as book_count
+        FROM book_categories c
+        LEFT JOIN books b ON b.category_id = c.id
+        LEFT JOIN book_copies bc ON bc.book_id = b.id
+        LEFT JOIN borrow_details bd ON bd.copy_id = bc.id
+        LEFT JOIN borrows br ON br.id = bd.borrow_id
+        WHERE br.status IN ('ACTIVE', 'RETURNED', 'APPROVED')
+        GROUP BY c.id
+        ORDER BY borrow_count DESC
+        LIMIT ?
+      `;
+
+      const [results] = await connection.query(query, [limit]);
+      const categories = results as any[];
+
+      res.status(200).json({
+        success: true,
+        data: categories,
+      });
+    } catch (error: any) {
+      console.error("Error getting top borrowed categories:", error);
+      res.status(500).json({
+        success: false,
+        message: "Có lỗi xảy ra khi tải danh sách danh mục mượn nhiều",
+      });
+    }
+  },
+
+  async getTopBorrowingUsers(req: AuthRequest, res: Response) {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const query = `
+        SELECT 
+          u.id,
+          u.full_name,
+          u.email,
+          u.avatar_url,
+          COUNT(br.id) as borrow_count
+        FROM users u
+        LEFT JOIN borrows br ON br.user_id = u.id
+        GROUP BY u.id
+        HAVING borrow_count > 0
+        ORDER BY borrow_count DESC
+        LIMIT ?
+      `;
+
+      const [results] = await connection.query(query, [limit]);
+      const users = results as any[];
+
+      res.status(200).json({
+        success: true,
+        data: users,
+      });
+    } catch (error: any) {
+      console.error("Error getting top borrowing users:", error);
+      res.status(500).json({
+        success: false,
+        message: "Có lỗi xảy ra khi tải danh sách người mượn nhiều",
       });
     }
   },

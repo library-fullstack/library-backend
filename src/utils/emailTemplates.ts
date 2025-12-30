@@ -288,13 +288,26 @@ export const sendBorrowApprovedEmail = async (
   await sendMail(to, subject, html, "borrow-approved");
 };
 
+const reasonMap = {
+  GOOD_CONDITION: "Sách còn tốt",
+  DAMAGED: "Sách hư hỏng",
+  LOST: "Sách bị mất",
+  WORN: "Sách rách / mềm",
+  WATER_DAMAGED: "Sách bị nước",
+  WRITTEN_ON: "Sách bị viết",
+  STAINED: "Sách bị bẩn",
+  DETERIORATED: "Sách mục",
+  OTHER: "Khác",
+};
+
 // email cảm ơn khi trả sách
 export const sendReturnedThankYouEmail = async (
   to: string,
   userName: string,
   ticketNumber: string,
   books: Array<{ book_title?: string; title?: string }>,
-  returnDate: string
+  returnDate: string,
+  returnReasons: string[]
 ): Promise<void> => {
   const subject = "Cảm ơn bạn đã trả sách - Thư viện HBH";
 
@@ -304,6 +317,36 @@ export const sendReturnedThankYouEmail = async (
       return `<li style="margin:6px 0; color:#334155;">${index + 1}. ${title}</li>`;
     })
     .join("");
+
+  const reasonList = returnReasons.length
+    ? `
+    <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:14px; border-radius:10px; margin:16px 0;">
+      <p style="margin:0 0 8px; font-weight:600; color:#334155;">
+        Tình trạng sách khi trả:
+      </p>
+      <div>
+        ${returnReasons
+          .map(
+            (r) => `
+              <span style="
+                display:inline-block;
+                margin:4px 6px 4px 0;
+                padding:6px 10px;
+                background:#EEF2FF;
+                color:#3730A3;
+                border-radius:999px;
+                font-size:13px;
+                font-weight:500;
+              ">
+                ${reasonMap[r as keyof typeof reasonMap] || r}
+              </span>
+            `
+          )
+          .join("")}
+      </div>
+    </div>
+  `
+    : "";
 
   const html = `
   <div style="font-family:'Segoe UI', sans-serif; background:#f8fafc; padding:32px;">
@@ -318,8 +361,10 @@ export const sendReturnedThankYouEmail = async (
 
       <div style="background:#EEF2FF; border-left:4px solid #4F46E5; padding:16px; margin:16px 0; border-radius:8px;">
         <p style="margin:0 0 8px; font-weight:600; color:#3730A3;">Thông tin trả sách:</p>
-        <p style="margin:4px 0; color:#4338CA;">• Ngày trả: <b>${returnDate}</b></p>
+        <p style="margin:4px 0; color:#4338CA;">Ngày trả: <b>${returnDate}</b></p>
       </div>
+
+      ${reasonList}
 
       <div style="margin:20px 0;">
         <p style="margin:0 0 8px; font-weight:600; color:#334155;">Danh sách sách đã trả:</p>
@@ -342,4 +387,92 @@ export const sendReturnedThankYouEmail = async (
   `;
 
   await sendMail(to, subject, html, "return-thank-you");
+};
+
+export const sendNewsNotificationEmail = async (
+  to: string,
+  newsTitle: string,
+  newsContent: string,
+  newsCategory: string
+): Promise<void> => {
+  const subject = `${newsTitle} - Thư viện HBH`;
+  const categoryLabel =
+    {
+      ANNOUNCEMENT: "Thông báo",
+      GUIDE: "Hướng dẫn",
+      UPDATE: "Cập nhật",
+      OTHER: "Khác",
+    }[newsCategory] || newsCategory;
+
+  const contentSnippet = newsContent;
+
+  const html = `
+  <div style="font-family:'Segoe UI', sans-serif; background:#f8fafc; padding:32px;">
+    <div style="max-width:600px; margin:auto; background:#ffffff; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.08); overflow:hidden;">
+      <div style="background:#4F46E5; color:#ffffff; padding:24px; text-align:center;">
+        <h1 style="margin:0; font-size:24px; font-weight:600;">${newsTitle}</h1>
+        <p style="margin:8px 0 0 0; font-size:14px; opacity:0.9;">${categoryLabel}</p>
+      </div>
+      <div style="padding:32px;">
+        <div style="line-height:1.8; color:#475569; margin:20px 0;">
+          ${contentSnippet}
+        </div>
+        <div style="text-align:center; margin-top:28px;">
+          <a href="https://hbh.libsys.me/news" style="display:inline-block; background:#4F46E5; color:#ffffff; padding:12px 32px; border-radius:8px; text-decoration:none; font-weight:600; font-size:14px;">
+            Xem tin tức đầy đủ
+          </a>
+        </div>
+      </div>
+      <div style="background:#f8fafc; padding:16px; text-align:center; border-top:1px solid #e2e8f0;">
+        <p style="margin:0; color:#64748B; font-size:12px;">
+          © 2025 HBH Library System | Đừng bỏ lỡ những cập nhật quan trọng
+        </p>
+      </div>
+    </div>
+  </div>
+  `;
+
+  await sendMail(to, subject, html, "news-notification");
+};
+
+export const sendEventNotificationEmail = async (
+  to: string,
+  eventTitle: string,
+  eventDescription: string,
+  eventDate: string
+): Promise<void> => {
+  const subject = `${eventTitle} - Thư viện HBH`;
+
+  const descSnippet = eventDescription;
+
+  const html = `
+  <div style="font-family:'Segoe UI', sans-serif; background:#f8fafc; padding:32px;">
+    <div style="max-width:600px; margin:auto; background:#ffffff; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.08); overflow:hidden;">
+      <div style="background:#4F46E5; color:#ffffff; padding:24px; text-align:center;">
+        <h1 style="margin:0; font-size:24px; font-weight:600;">${eventTitle}</h1>
+        <p style="margin:8px 0 0 0; font-size:14px; opacity:0.9;">Sự kiện sắp tới</p>
+      </div>
+      <div style="padding:32px;">
+        <div style="background:#FEF3C7; border-left:4px solid #F59E0B; padding:16px; margin-bottom:20px; border-radius:4px;">
+          <p style="margin:0; color:#92400E; font-size:14px; font-weight:600;">Thời gian diễn ra: ${eventDate}</p>
+        </div>
+        <div style="line-height:1.8; color:#475569; margin:20px 0;">
+          ${descSnippet}
+        </div>
+        <div style="text-align:center; margin-top:28px;">
+          <a href="https://hbh.libsys.me/events" style="display:inline-block; background:#4F46E5; color:#ffffff; padding:12px 32px; border-radius:8px; text-decoration:none; font-weight:600; font-size:14px;">
+            Xem chi tiết sự kiện
+          </a>
+        </div>
+      </div>
+      <div style="background:#f8fafc; padding:16px; text-align:center; border-top:1px solid #e2e8f0;">
+        <p style="margin:0; color:#64748B; font-size:12px;">
+          © 2025 HBH Library System | Hãy tham gia các sự kiện thú vị
+        </p>
+      </div>
+    </div>
+  </div>
+  `;
+
+  await sendMail(to, subject, html, "event-notification");
 };

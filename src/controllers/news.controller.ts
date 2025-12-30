@@ -6,6 +6,8 @@ import type {
   UpdateNewsInput,
   NewsListFilter,
 } from "../models/news.model.ts";
+import connection from "../config/db.ts";
+import { sendNewsNotificationEmail } from "../utils/emailTemplates.ts";
 
 export const getAllNews = async (req: Request, res: Response) => {
   try {
@@ -137,6 +139,32 @@ export const createNews = async (req: AuthenticatedRequest, res: Response) => {
     };
 
     const news = await NewsService.create(input);
+
+    const [settings] = await connection.query<any[]>(
+      "SELECT setting_value FROM system_settings WHERE setting_key = 'send_news_email' LIMIT 1"
+    );
+
+    if (settings.length > 0 && settings[0].setting_value === "true") {
+      const [users] = await connection.query<any[]>(
+        "SELECT id, email, full_name FROM users WHERE status = 'ACTIVE' AND role IN ('STUDENT', 'STAFF')"
+      );
+
+      if (users.length > 0) {
+        for (const user of users) {
+          try {
+            await sendNewsNotificationEmail(
+              user.email,
+              input.title,
+              input.content,
+              input.category
+            );
+          } catch (err) {
+            console.error(`[News] Email send failed for ${user.email}:`, err);
+          }
+        }
+        console.log(`[News] Sent notification to ${users.length} recipients`);
+      }
+    }
 
     res.status(201).json({
       success: true,

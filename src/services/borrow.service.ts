@@ -4,6 +4,7 @@ import {
   Borrow,
   BorrowWithDetails,
   BorrowStatus,
+  ReturnReason,
   ConfirmBorrowInput,
 } from "../models/borrow.model.ts";
 import { BorrowDetailWithBook } from "../models/borrowDetail.model.ts";
@@ -231,6 +232,13 @@ export const BorrowService = {
       });
     }
 
+    const [reasonRows] = await connection.query(
+      `SELECT reason FROM borrow_return_reasons WHERE borrow_id = ?`,
+      [borrowId]
+    );
+
+    borrow.return_reasons = (reasonRows as any[]).map((r) => r.reason);
+
     return borrow;
   },
 
@@ -394,6 +402,13 @@ export const BorrowService = {
           };
         });
       }
+
+      const [reasonRows] = await connection.query(
+        `SELECT reason FROM borrow_return_reasons WHERE borrow_id = ?`,
+        [borrow.id]
+      );
+
+      borrow.return_reasons = (reasonRows as any[]).map((r) => r.reason);
     }
 
     return { borrows, total };
@@ -425,7 +440,7 @@ export const BorrowService = {
         PENDING: ["CONFIRMED", "CANCELLED"],
         CONFIRMED: ["APPROVED", "CANCELLED"],
         APPROVED: ["ACTIVE", "CANCELLED"],
-        ACTIVE: ["RETURNED", "OVERDUE", "CANCELLED"],
+        ACTIVE: ["OVERDUE", "RETURNED", "CANCELLED"],
         OVERDUE: ["RETURNED", "CANCELLED"],
       };
 
@@ -448,14 +463,6 @@ export const BorrowService = {
           `UPDATE book_copies bc
            JOIN borrow_details bd ON bd.copy_id = bc.id
            SET bc.status = 'ON_LOAN'
-           WHERE bd.borrow_id = ?`,
-          [borrowId]
-        );
-      } else if (status === BorrowStatus.RETURNED) {
-        await conn.query(
-          `UPDATE book_copies bc
-           JOIN borrow_details bd ON bd.copy_id = bc.id
-           SET bc.status = 'AVAILABLE'
            WHERE bd.borrow_id = ?`,
           [borrowId]
         );
@@ -663,6 +670,104 @@ export const BorrowService = {
     }
 
     return borrow;
+  },
+
+  async returnBorrow(
+    borrowId: number,
+    reasons: ReturnReason[],
+    adminId: string
+  ): Promise<{
+    success: boolean;
+    fine: number;
+    message: string;
+    emailData: {
+      email: string;
+      fullname: string;
+      items: Array<{ book_title: string }>;
+      return_reasons: ReturnReason[];
+    };
+  }> {
+    const conn = await connection.getConnection();
+
+    try {
+      await conn.beginTransaction();
+
+      // 1. kiểm tra + lấy info cần cho email
+      const [rows] = await conn.query(
+        `
+      SELECT 
+        b.id, b.status,
+        u.email, u.full_name,
+        GROUP_CONCAT(bk.title SEPARATOR '|||') as book_titles
+      FROM borrows b
+      JOIN users u ON u.id = b.user_id
+      LEFT JOIN borrow_details bd ON bd.borrow_id = b.id
+      LEFT JOIN book_copies bc ON bc.id = bd.copy_id
+      LEFT JOIN books bk ON bk.id = bc.book_id
+      WHERE b.id = ?
+      GROUP BY b.id
+      `,
+        [borrowId]
+      );
+
+      const borrow = (rows as any[])[0];
+      if (!borrow) throw new Error("Phiếu mượn không tồn tại");
+      if (borrow.status !== BorrowStatus.ACTIVE)
+        throw new Error("Chỉ có thể trả phiếu đang mượn");
+
+      // 2. update borrow
+      await conn.query(
+        `
+      UPDATE borrows
+      SET status = ?, return_date = NOW(), processed_by = ?
+      WHERE id = ?
+      `,
+        [BorrowStatus.RETURNED, adminId, borrowId]
+      );
+
+      // 3. thêm checklist
+      for (const reason of reasons) {
+        await conn.query(
+          `INSERT INTO borrow_return_reasons (borrow_id, reason)
+         VALUES (?, ?)`,
+          [borrowId, reason]
+        );
+      }
+
+      // 4. trả lại sách
+      await conn.query(
+        `
+      UPDATE book_copies bc
+      JOIN borrow_details bd ON bd.copy_id = bc.id
+      SET bc.status = 'AVAILABLE'
+      WHERE bd.borrow_id = ?
+      `,
+        [borrowId]
+      );
+
+      await conn.commit();
+
+      return {
+        success: true,
+        fine: 0,
+        message: "Đã xác nhận trả sách",
+        emailData: {
+          email: borrow.email,
+          fullname: borrow.full_name,
+          items: borrow.book_titles
+            ? borrow.book_titles
+                .split("|||")
+                .map((t: string) => ({ book_title: t }))
+            : [],
+          return_reasons: reasons,
+        },
+      };
+    } catch (e) {
+      await conn.rollback();
+      throw e;
+    } finally {
+      conn.release();
+    }
   },
 };
 
