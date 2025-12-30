@@ -6,6 +6,10 @@ import type {
   UpdateEventInput,
   EventListFilter,
 } from "../models/events.model.ts";
+import connection from "../config/db.ts";
+import { sendEventNotificationEmail } from "../utils/emailTemplates.ts";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 export const getAllEvents = async (req: Request, res: Response) => {
   try {
@@ -163,6 +167,33 @@ export const createEvent = async (req: AuthenticatedRequest, res: Response) => {
     };
 
     const event = await EventsService.create(input);
+
+    const [settings] = await connection.query<any[]>(
+      "SELECT setting_value FROM system_settings WHERE setting_key = 'send_event_email' LIMIT 1"
+    );
+
+    if (settings.length > 0 && settings[0].setting_value === "true") {
+      const [users] = await connection.query<any[]>(
+        "SELECT id, email, full_name FROM users WHERE status = 'ACTIVE' AND role IN ('STUDENT', 'STAFF')"
+      );
+
+      if (users.length > 0) {
+        const eventDate = format(startTime, "dd/MM/yyyy HH:mm", { locale: vi });
+        for (const user of users) {
+          try {
+            await sendEventNotificationEmail(
+              user.email,
+              input.title,
+              input.description || "",
+              eventDate
+            );
+          } catch (err) {
+            console.error(`[Events] Email send failed for ${user.email}:`, err);
+          }
+        }
+        console.log(`[Events] Sent notification to ${users.length} recipients`);
+      }
+    }
 
     res.status(201).json({
       success: true,

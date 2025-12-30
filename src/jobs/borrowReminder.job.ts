@@ -27,7 +27,8 @@ export const startBorrowReminderJob = () => {
           LEFT JOIN book_copies bc ON bc.id = bd.copy_id
           LEFT JOIN books bk ON bk.id = bc.book_id
           WHERE b.status = 'ACTIVE'
-            AND DATE(b.due_date) = DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+            AND (DATE(b.due_date) = DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+              OR DATE(b.due_date) = DATE_ADD(CURDATE(), INTERVAL 2 DAY))
           GROUP BY b.id
         `;
 
@@ -42,12 +43,12 @@ export const startBorrowReminderJob = () => {
         }>;
 
         if (borrows.length === 0) {
-          console.log("[CRON] No borrows due tomorrow. No emails sent.");
+          console.log("[CRON] No borrows due soon. No emails sent.");
           return;
         }
 
         console.log(
-          `[CRON] Found ${borrows.length} borrow(s) due tomorrow. Sending emails...`
+          `[CRON] Found ${borrows.length} borrow(s) due soon. Sending emails...`
         );
 
         for (const borrow of borrows) {
