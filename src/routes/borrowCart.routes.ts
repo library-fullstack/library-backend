@@ -1,10 +1,10 @@
 import { Router } from "express";
-import BorrowCartController from "../controllers/borrowCart.controller.ts";
-import { authMiddleware } from "../middlewares/auth.middleware.ts";
+import BorrowCartController from "../controllers/borrowCart.controller";
+import { authMiddleware } from "../middlewares/auth.middleware";
 import {
   cacheMiddleware,
   invalidateCacheMiddleware,
-} from "../middlewares/cache.middleware.ts";
+} from "../middlewares/cache.middleware";
 
 const router = Router();
 

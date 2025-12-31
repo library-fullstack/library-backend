@@ -1,7 +1,7 @@
-import connection from "../config/db.ts";
-import { userModel } from "../models/index.ts";
+import connection from "../config/db";
+import { userModel } from "../models/index";
 import { v4 as uuidv4 } from "uuid";
-import { hashPassword } from "../utils/password.ts";
+import { hashPassword } from "../utils/password";
 
 const adminGetAllUser = async (
   page: number = 1,

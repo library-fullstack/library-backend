@@ -1,8 +1,8 @@
-import db from "../config/db.ts";
+import db from "../config/db";
 import type {
   Notification,
   CreateNotificationInput,
-} from "../models/notification.model.ts";
+} from "../models/notification.model";
 
 class NotificationService {
   async create(input: CreateNotificationInput): Promise<number> {

@@ -1,17 +1,17 @@
 import { Request, Response } from "express";
-import type { AuthRequest } from "../types/errors.ts";
-import BorrowService from "../services/borrow.service.ts";
-import activityLogService from "../services/activityLog.service.ts";
-import notificationService from "../services/notification.service.ts";
-import { ActivityType } from "../models/activityLog.model.ts";
+import type { AuthRequest } from "../types/errors";
+import BorrowService from "../services/borrow.service";
+import activityLogService from "../services/activityLog.service";
+import notificationService from "../services/notification.service";
+import { ActivityType } from "../models/activityLog.model";
 import {
   sendBorrowApprovedEmail,
   sendReturnedThankYouEmail,
-} from "../utils/emailTemplates.ts";
-import { BorrowStatus, ReturnReason } from "../models/borrow.model.ts";
+} from "../utils/emailTemplates";
+import { BorrowStatus, ReturnReason } from "../models/borrow.model";
 import { format, addDays } from "date-fns";
 import { vi } from "date-fns/locale";
-import connection from "../config/db.ts";
+import connection from "../config/db";
 
 export const BorrowController = {
   async createBorrow(req: AuthRequest, res: Response) {

@@ -1,11 +1,11 @@
-import connection from "../../config/db.ts";
+import connection from "../../config/db";
 import type {
   ForumComment,
   ForumCommentDetail,
   CreateCommentInput,
   UpdateCommentInput,
-} from "../../models/forum/comment.model.ts";
-import ForumPostService from "./post.service.ts";
+} from "../../models/forum/comment.model";
+import ForumPostService from "./post.service";
 
 function convertToISO(mysqlDateTime: any): string {
   if (!mysqlDateTime) return new Date().toISOString();

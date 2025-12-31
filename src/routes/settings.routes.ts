@@ -5,13 +5,13 @@ import {
   updateSettingController,
   toggleSettingController,
   deleteSettingController,
-} from "../controllers/settings.controller.ts";
-import { authMiddleware } from "../middlewares/auth.middleware.ts";
-import { authorize } from "../middlewares/authorize.middleware.ts";
+} from "../controllers/settings.controller";
+import { authMiddleware } from "../middlewares/auth.middleware";
+import { authorize } from "../middlewares/authorize.middleware";
 import {
   cacheMiddleware,
   invalidateCacheMiddleware,
-} from "../middlewares/cache.middleware.ts";
+} from "../middlewares/cache.middleware";
 
 const settingsAdminRoutes = Router();
 

@@ -1,7 +1,7 @@
 import express from "express";
-import BorrowController from "../controllers/borrow.controller.ts";
-import { authMiddleware } from "../middlewares/auth.middleware.ts";
-import { authorize } from "../middlewares/authorize.middleware.ts";
+import BorrowController from "../controllers/borrow.controller";
+import { authMiddleware } from "../middlewares/auth.middleware";
+import { authorize } from "../middlewares/authorize.middleware";
 
 const router = express.Router();
 

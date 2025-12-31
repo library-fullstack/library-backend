@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.ts";
-import ForumSettingsService from "../../services/forum/settings.service.ts";
+import type { AuthenticatedRequest } from "../../middlewares/auth.middleware";
+import ForumSettingsService from "../../services/forum/settings.service";
 
 export const getForumSettings = async (
   req: AuthenticatedRequest,

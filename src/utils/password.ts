@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { requireEnv } from "../config/env.ts";
+import { requireEnv } from "../config/env";
 
 export const SALT_ROUNDS = 10;
 const PEPPER = requireEnv("PASSWORD_PEPPER") || "";

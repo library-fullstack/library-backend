@@ -1,8 +1,8 @@
 import { Router } from "express";
-import * as uploadController from "../controllers/upload.controller.ts";
-import { uploadMiddleware as upload } from "../middlewares/upload.middleware.ts";
-import { authorize } from "../middlewares/authorize.middleware.ts";
-import { authMiddleware } from "../middlewares/auth.middleware.ts";
+import * as uploadController from "../controllers/upload.controller";
+import { uploadMiddleware as upload } from "../middlewares/upload.middleware";
+import { authorize } from "../middlewares/authorize.middleware";
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
 

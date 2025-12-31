@@ -1,11 +1,11 @@
-import db from "../config/db.ts";
+import db from "../config/db";
 import { v4 as uuidv4 } from "uuid";
 import type {
   ActivityLog,
   ActivityLogWithUser,
   CreateActivityLogInput,
   ActivityType,
-} from "../models/activityLog.model.ts";
+} from "../models/activityLog.model";
 
 class ActivityLogService {
   async create(data: CreateActivityLogInput): Promise<string> {

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import statisticsService from "../services/statistics.service.ts";
+import statisticsService from "../services/statistics.service";
 
 const getDashboardStatsController = async (req: Request, res: Response) => {
   try {

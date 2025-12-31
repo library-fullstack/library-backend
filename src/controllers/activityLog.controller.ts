@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import activityLogService from "../services/activityLog.service.ts";
+import activityLogService from "../services/activityLog.service";
 
 export const getRecentActivities = async (req: Request, res: Response) => {
   try {

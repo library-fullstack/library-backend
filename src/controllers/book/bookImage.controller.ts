@@ -3,7 +3,7 @@ import {
   getImagesByBookId,
   addBookImage,
   deleteBookImage,
-} from "../../services/book/bookImage.service.ts";
+} from "../../services/book/bookImage.service";
 
 const getImagesByBookController = async (
   req: Request,

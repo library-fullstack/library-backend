@@ -1,19 +1,19 @@
 import { Router } from "express";
-import { authMiddleware } from "../../middlewares/auth.middleware.ts";
+import { authMiddleware } from "../../middlewares/auth.middleware";
 import {
   cacheMiddleware,
   invalidateCacheMiddleware,
-} from "../../middlewares/cache.middleware.ts";
+} from "../../middlewares/cache.middleware";
 import {
   requireRole,
   requireAdmin,
-} from "../../middlewares/forum-auth.middleware.ts";
+} from "../../middlewares/forum-auth.middleware";
 import {
   ForumCategoryController,
   adminCreateCategory,
   adminUpdateCategory,
   adminDeleteCategory,
-} from "../../controllers/forum/category.controller.ts";
+} from "../../controllers/forum/category.controller";
 
 const router = Router();
 

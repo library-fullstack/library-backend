@@ -1,13 +1,13 @@
 import express from "express";
-import { authMiddleware } from "../middlewares/auth.middleware.ts";
-import { authorizeOrOwner } from "../middlewares/authorize.middleware.ts";
-import { uploadMiddleware } from "../middlewares/upload.middleware.ts";
+import { authMiddleware } from "../middlewares/auth.middleware";
+import { authorizeOrOwner } from "../middlewares/authorize.middleware";
+import { uploadMiddleware } from "../middlewares/upload.middleware";
 import {
   cacheMiddleware,
   invalidateCacheMiddleware,
-} from "../middlewares/cache.middleware.ts";
-import { secureCacheMiddleware } from "../middlewares/secure-cache.middleware.ts";
-import * as userController from "../controllers/user.controller.ts";
+} from "../middlewares/cache.middleware";
+import { secureCacheMiddleware } from "../middlewares/secure-cache.middleware";
+import * as userController from "../controllers/user.controller";
 
 const router = express.Router();
 

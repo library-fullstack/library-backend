@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { cache } from "../config/redis.ts";
+import { cache } from "../config/redis";
 import crypto from "crypto";
 
 export const cacheMiddleware = (ttl: number = 300, keyPrefix: string = "") => {

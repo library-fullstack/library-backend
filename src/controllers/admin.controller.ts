@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import type { ApiError } from "../types/errors.ts";
-import adminServices from "../services/admin.service.ts";
-import { userModel } from "../models/index.ts";
-import adminService from "../services/admin.service.ts";
+import type { ApiError } from "../types/errors";
+import adminServices from "../services/admin.service";
+import { userModel } from "../models/index";
+import adminService from "../services/admin.service";
 
 const adminGetAllUserController = async (
   req: Request,

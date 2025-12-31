@@ -1,5 +1,5 @@
 import mysql, { type PoolOptions } from "mysql2/promise";
-import { env } from "./env.ts";
+import { env } from "./env";
 
 const access: PoolOptions = {
   host: env.DB_HOST,

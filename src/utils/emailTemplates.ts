@@ -1,4 +1,4 @@
-import { sendMail } from "./mailer.ts";
+import { sendMail } from "./mailer";
 
 // hàm gửi mail chào mừng khi đăng ký thành công
 export const sendWelcomeEmail = async (

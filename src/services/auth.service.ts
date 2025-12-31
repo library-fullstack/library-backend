@@ -1,6 +1,6 @@
-import { userModel } from "../models/index.ts";
-import userServices from "./user.service.ts";
-import { signToken } from "../utils/jwt.ts";
+import { userModel } from "../models/index";
+import userServices from "./user.service";
+import { signToken } from "../utils/jwt";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -8,15 +8,15 @@ import {
   verifyRefreshTokenExists,
   revokeRefreshToken,
   revokeAllRefreshTokens,
-} from "../utils/token.ts";
-import { verifyPassword, hashPassword } from "../utils/password.ts";
-import { sendPasswordResetEmail } from "../utils/emailTemplates.ts";
-import connection from "../config/db.ts";
-import { requireEnv } from "../config/env.ts";
+} from "../utils/token";
+import { verifyPassword, hashPassword } from "../utils/password";
+import { sendPasswordResetEmail } from "../utils/emailTemplates";
+import connection from "../config/db";
+import { requireEnv } from "../config/env";
 import { v4 as uuidv4 } from "uuid";
-import { sendMail } from "../utils/mailer.ts";
+import { sendMail } from "../utils/mailer";
 import crypto from "crypto";
-import { cache } from "../config/redis.ts";
+import { cache } from "../config/redis";
 
 const register = async (user: userModel.StudentRegisterInput) => {
   if (!user.student_id) throw new Error("Mã sinh viên là bắt buộc.");

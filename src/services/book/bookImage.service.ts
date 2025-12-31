@@ -1,5 +1,5 @@
-import connection from "../../config/db.ts";
-import { bookImageModel } from "../../models/index.ts";
+import connection from "../../config/db";
+import { bookImageModel } from "../../models/index";
 
 const getImagesByBookId = async (bookId: number) => {
   const [rows] = await connection.query<bookImageModel.BookImage[]>(

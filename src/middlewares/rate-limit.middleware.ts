@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { cache } from "../config/redis.ts";
+import { cache } from "../config/redis";
 
 interface RateLimitOptions {
   windowMs: number;

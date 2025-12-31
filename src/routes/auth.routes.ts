@@ -1,5 +1,5 @@
 import express from "express";
-import { validate } from "../middlewares/validate.middleware.ts";
+import { validate } from "../middlewares/validate.middleware";
 import {
   loginController,
   registerController,
@@ -8,10 +8,10 @@ import {
   sendOtpController,
   refreshTokenController,
   logoutController,
-} from "../controllers/auth.controller.ts";
-import { authMiddleware } from "../middlewares/auth.middleware.ts";
-import { verifyChangePasswordController } from "../controllers/auth.controller.ts";
-import { secureCacheMiddleware } from "../middlewares/secure-cache.middleware.ts";
+} from "../controllers/auth.controller";
+import { authMiddleware } from "../middlewares/auth.middleware";
+import { verifyChangePasswordController } from "../controllers/auth.controller";
+import { secureCacheMiddleware } from "../middlewares/secure-cache.middleware";
 
 const router = express.Router();
 

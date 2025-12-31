@@ -1,8 +1,8 @@
 import { Router, Request, Response } from "express";
-import { authMiddleware } from "../../middlewares/auth.middleware.ts";
-import { authorize } from "../../middlewares/authorize.middleware.ts";
-import { uploadMiddleware } from "../../middlewares/upload.middleware.ts";
-import { uploadToCloudinary } from "../../utils/cloudinary.ts";
+import { authMiddleware } from "../../middlewares/auth.middleware";
+import { authorize } from "../../middlewares/authorize.middleware";
+import { uploadMiddleware } from "../../middlewares/upload.middleware";
+import { uploadToCloudinary } from "../../utils/cloudinary";
 
 const router = Router();
 

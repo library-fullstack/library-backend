@@ -4,7 +4,7 @@ import {
   createPublisher,
   updatePublisher,
   deletePublisher,
-} from "../../services/book/publisher.service.ts";
+} from "../../services/book/publisher.service";
 
 const getAllPublishersController = async (
   req: Request,

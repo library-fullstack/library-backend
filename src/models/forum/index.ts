@@ -1,6 +1,6 @@
-export * as categoryModel from "./category.model.ts";
-export * as postModel from "./post.model.ts";
-export * as commentModel from "./comment.model.ts";
-export * as reactionModel from "./reaction.model.ts";
-export * as reportModel from "./report.model.ts";
-export * as notificationModel from "./notification.model.ts";
+export * as categoryModel from "./category.model";
+// export * as postModel from "./post.model";
+export * as commentModel from "./comment.model";
+export * as reactionModel from "./reaction.model";
+export * as reportModel from "./report.model";
+export * as notificationModel from "./notification.model";

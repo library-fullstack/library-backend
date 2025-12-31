@@ -3,7 +3,7 @@ import {
   getAuthorsByBookId,
   addAuthorToBook,
   removeAuthorFromBook,
-} from "../../services/book/bookAuthor.service.ts";
+} from "../../services/book/bookAuthor.service";
 
 const getAuthorsByBookController = async (
   req: Request,

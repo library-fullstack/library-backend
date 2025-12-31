@@ -1,6 +1,6 @@
 import cron from "node-cron";
-import connection from "../config/db.ts";
-import { sendReturnReminderEmail } from "../utils/emailTemplates.ts";
+import connection from "../config/db";
+import { sendReturnReminderEmail } from "../utils/emailTemplates";
 import { format, differenceInDays } from "date-fns";
 import { vi } from "date-fns/locale";
 

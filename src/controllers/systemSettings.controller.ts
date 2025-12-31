@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import systemSettingsService from "../services/systemSettings.service.ts";
+import systemSettingsService from "../services/systemSettings.service";
 
 export const getAllSettings = async (_req: Request, res: Response) => {
   try {

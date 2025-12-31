@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import type { ApiError, AuthRequest } from "../types/errors.ts";
-import BorrowCartService from "../services/borrowCart.service.ts";
+import type { ApiError, AuthRequest } from "../types/errors";
+import BorrowCartService from "../services/borrowCart.service";
 
 export const BorrowCartController = {
   async getCart(req: AuthRequest, res: Response) {

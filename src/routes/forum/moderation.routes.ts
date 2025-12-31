@@ -1,13 +1,13 @@
 import { Router, Request, Response } from "express";
-import { authMiddleware } from "../../middlewares/auth.middleware.ts";
+import { authMiddleware } from "../../middlewares/auth.middleware";
 import {
   requireModerator,
   requireAdmin,
   requireOwnerOrModerator,
-} from "../../middlewares/forum-auth.middleware.ts";
-import { invalidateCacheMiddleware } from "../../middlewares/cache.middleware.ts";
-import ForumModerationService from "../../services/forum/moderation.service.ts";
-import ForumPostService from "../../services/forum/post.service.ts";
+} from "../../middlewares/forum-auth.middleware";
+import { invalidateCacheMiddleware } from "../../middlewares/cache.middleware";
+import ForumModerationService from "../../services/forum/moderation.service";
+import ForumPostService from "../../services/forum/post.service";
 import {
   getPendingPosts,
   getReports,
@@ -16,11 +16,11 @@ import {
   approvePostByModerator,
   rejectPostByModerator,
   resolveReport,
-} from "../../controllers/forum/moderation.controller.ts";
+} from "../../controllers/forum/moderation.controller";
 import {
   getForumSettings,
   updateForumSettings,
-} from "../../controllers/forum/settings.controller.ts";
+} from "../../controllers/forum/settings.controller";
 
 const router = Router();
 

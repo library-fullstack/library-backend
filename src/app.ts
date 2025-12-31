@@ -4,11 +4,11 @@ import helmet from "helmet";
 import morgan from "morgan";
 import compression from "compression";
 import cookieParser from "cookie-parser";
-import { env } from "./config/env.ts";
-import { errorMiddleware } from "./middlewares/error.middleware.ts";
-import { standardRateLimit } from "./middlewares/rate-limit.middleware.ts";
-import { performanceMiddleware } from "./middlewares/performance.middleware.ts";
-import router from "./routes/index.ts";
+import { env } from "./config/env";
+import { errorMiddleware } from "./middlewares/error.middleware";
+import { standardRateLimit } from "./middlewares/rate-limit.middleware";
+import { performanceMiddleware } from "./middlewares/performance.middleware";
+import router from "./routes/index";
 
 const app = express();
 

@@ -1,6 +1,6 @@
 import type { Response } from "express";
-import type { AuthRequest } from "../../types/errors.ts";
-import connection from "../../config/db.ts";
+import type { AuthRequest } from "../../types/errors";
+import connection from "../../config/db";
 export const getMyPosts = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;

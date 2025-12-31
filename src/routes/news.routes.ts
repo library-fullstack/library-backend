@@ -7,9 +7,9 @@ import {
   updateNews,
   deleteNews,
   getLatestNews,
-} from "../controllers/news.controller.ts";
-import { authenticate } from "../middlewares/auth.middleware.ts";
-import { authorize } from "../middlewares/authorize.middleware.ts";
+} from "../controllers/news.controller";
+import { authenticate } from "../middlewares/auth.middleware";
+import { authorize } from "../middlewares/authorize.middleware";
 
 const router = Router();
 

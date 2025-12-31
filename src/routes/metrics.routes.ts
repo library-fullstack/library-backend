@@ -1,10 +1,10 @@
 import { Router, Request, Response } from "express";
-import { getCacheMetrics, resetCacheMetrics } from "../config/redis.ts";
+import { getCacheMetrics, resetCacheMetrics } from "../config/redis";
 import {
   getPerformanceMetrics,
   resetPerformanceMetrics,
-} from "../middlewares/performance.middleware.ts";
-import { getConnectionPoolMetrics } from "../config/db.ts";
+} from "../middlewares/performance.middleware";
+import { getConnectionPoolMetrics } from "../config/db";
 
 const router = Router();
 

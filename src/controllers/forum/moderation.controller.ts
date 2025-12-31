@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.ts";
-import ForumModerationService from "../../services/forum/moderation.service.ts";
-import ForumPostService from "../../services/forum/post.service.ts";
-import notificationService from "../../services/notification.service.ts";
-import connection from "../../config/db.ts";
+import type { AuthenticatedRequest } from "../../middlewares/auth.middleware";
+import ForumModerationService from "../../services/forum/moderation.service";
+import ForumPostService from "../../services/forum/post.service";
+import notificationService from "../../services/notification.service";
+import connection from "../../config/db";
 
 export const getPendingPosts = async (
   req: AuthenticatedRequest,

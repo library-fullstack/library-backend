@@ -1,11 +1,11 @@
 import express from "express";
-import { authMiddleware } from "../../middlewares/auth.middleware.ts";
-import { authorize } from "../../middlewares/authorize.middleware.ts";
+import { authMiddleware } from "../../middlewares/auth.middleware";
+import { authorize } from "../../middlewares/authorize.middleware";
 import {
   cacheMiddleware,
   invalidateCacheMiddleware,
-} from "../../middlewares/cache.middleware.ts";
-import * as controller from "../../controllers/book/bookAuthor.controller.ts";
+} from "../../middlewares/cache.middleware";
+import * as controller from "../../controllers/book/bookAuthor.controller";
 
 const router = express.Router();
 

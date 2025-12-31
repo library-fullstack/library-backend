@@ -1,6 +1,6 @@
-import connection from "../../config/db.ts";
-import { Book, BookInput, BookInputFull } from "../../models/book.model.ts";
-import { BookFilters, isValidBookSort } from "../../types/common.ts";
+import connection from "../../config/db";
+import { Book, BookInput, BookInputFull } from "../../models/book.model";
+import { BookFilters, isValidBookSort } from "../../types/common";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 const getAllBooks = async (filters?: BookFilters): Promise<Book[]> => {

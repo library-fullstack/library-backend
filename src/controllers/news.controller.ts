@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
-import NewsService from "../services/news.service.ts";
-import type { AuthenticatedRequest } from "../middlewares/auth.middleware.ts";
+import NewsService from "../services/news.service";
+import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
 import type {
   CreateNewsInput,
   UpdateNewsInput,
   NewsListFilter,
-} from "../models/news.model.ts";
-import connection from "../config/db.ts";
-import { sendNewsNotificationEmail } from "../utils/emailTemplates.ts";
+} from "../models/news.model";
+import connection from "../config/db";
+import { sendNewsNotificationEmail } from "../utils/emailTemplates";
 
 export const getAllNews = async (req: Request, res: Response) => {
   try {

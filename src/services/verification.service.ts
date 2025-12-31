@@ -1,8 +1,8 @@
-import connection from "../config/db.ts";
+import connection from "../config/db";
 import { v4 as uuidv4 } from "uuid";
-import { sendMail } from "../utils/mailer.ts";
-import { generateOtpCode } from "../utils/otp.ts";
-import { sendChangePasswordOtpEmail } from "../utils/emailTemplates.ts";
+import { sendMail } from "../utils/mailer";
+import { generateOtpCode } from "../utils/otp";
+import { sendChangePasswordOtpEmail } from "../utils/emailTemplates";
 
 export const verificationService = {
   // gửi hoặc tái sử dụng OTP khi đổi mật khẩu

@@ -1,5 +1,5 @@
-import connection from "../config/db.ts";
-import type { BorrowCart, BorrowCartItem } from "../models/borrowCart.model.ts";
+import connection from "../config/db";
+import type { BorrowCart, BorrowCartItem } from "../models/borrowCart.model";
 
 interface CartItemWithBook extends BorrowCart {
   id: number;

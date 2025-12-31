@@ -1,7 +1,7 @@
 import { Router } from "express";
-import * as activityLogController from "../controllers/activityLog.controller.ts";
-import { authorize } from "../middlewares/authorize.middleware.ts";
-import { authMiddleware } from "../middlewares/auth.middleware.ts";
+import * as activityLogController from "../controllers/activityLog.controller";
+import { authorize } from "../middlewares/authorize.middleware";
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
 

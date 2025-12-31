@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { authMiddleware } from "../../middlewares/auth.middleware.ts";
+import { authMiddleware } from "../../middlewares/auth.middleware";
 import {
   cacheMiddleware,
   invalidateCacheMiddleware,
-} from "../../middlewares/cache.middleware.ts";
-import { ForumCommentController } from "../../controllers/forum/comment.controller.ts";
-import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.ts";
+} from "../../middlewares/cache.middleware";
+import { ForumCommentController } from "../../controllers/forum/comment.controller";
+import type { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -52,7 +52,7 @@ router.post(
       }
 
       const postQuery = `SELECT is_locked FROM forum_posts WHERE id = ?`;
-      const connection = (await import("../../config/db.ts")).default;
+      const connection = (await import("../../config/db")).default;
       const [postResult] = await connection.query(postQuery, [postId]);
       const post = (postResult as any[])[0];
 

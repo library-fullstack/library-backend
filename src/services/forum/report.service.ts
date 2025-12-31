@@ -1,9 +1,9 @@
-import connection from "../../config/db.ts";
+import connection from "../../config/db";
 import type {
   ForumReport,
   CreateReportInput,
   UpdateReportInput,
-} from "../../models/forum/report.model.ts";
+} from "../../models/forum/report.model";
 
 const ForumReportService = {
   async createReport(

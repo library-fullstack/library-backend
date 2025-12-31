@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import userServices from "../services/user.service.ts";
-import { uploadToCloudinary } from "../utils/cloudinary.ts";
-import { userModel } from "../models/index.ts";
-import { verifyPassword, hashPassword } from "../utils/password.ts";
-import connection from "../config/db.ts";
+import userServices from "../services/user.service";
+import { uploadToCloudinary } from "../utils/cloudinary";
+import { userModel } from "../models/index";
+import { verifyPassword, hashPassword } from "../utils/password";
+import connection from "../config/db";
 
 // get user bằng id
 const getUserByIdController = async (

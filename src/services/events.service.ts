@@ -1,4 +1,4 @@
-import connection from "../config/db.ts";
+import connection from "../config/db";
 import type {
   Event,
   EventWithCreator,
@@ -6,7 +6,7 @@ import type {
   UpdateEventInput,
   EventListFilter,
   EventStatus,
-} from "../models/events.model.ts";
+} from "../models/events.model";
 
 function generateSlug(title: string): string {
   const baseSlug = title

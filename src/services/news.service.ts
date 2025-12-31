@@ -1,4 +1,4 @@
-import connection from "../config/db.ts";
+import connection from "../config/db";
 import type {
   News,
   NewsWithAuthor,
@@ -6,7 +6,7 @@ import type {
   UpdateNewsInput,
   NewsListFilter,
   NewsStatus,
-} from "../models/news.model.ts";
+} from "../models/news.model";
 
 function generateSlug(title: string): string {
   const baseSlug = title

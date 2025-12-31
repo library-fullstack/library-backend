@@ -8,9 +8,9 @@ import {
   deleteEvent,
   getUpcomingEvents,
   getLatestEvents,
-} from "../controllers/events.controller.ts";
-import { authenticate } from "../middlewares/auth.middleware.ts";
-import { authorize } from "../middlewares/authorize.middleware.ts";
+} from "../controllers/events.controller";
+import { authenticate } from "../middlewares/auth.middleware";
+import { authorize } from "../middlewares/authorize.middleware";
 
 const router = Router();
 

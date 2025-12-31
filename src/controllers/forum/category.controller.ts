@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import type { AuthRequest } from "../../types/errors.ts";
-import ForumCategoryService from "../../services/forum/category.service.ts";
+import type { AuthRequest } from "../../types/errors";
+import ForumCategoryService from "../../services/forum/category.service";
 
 export const ForumCategoryController = {
   async getAllCategories(req: Request, res: Response): Promise<void> {

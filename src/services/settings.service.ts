@@ -1,5 +1,5 @@
-import connection from "../config/db.ts";
-import { settingsModel } from "../models/index.ts";
+import connection from "../config/db";
+import { settingsModel } from "../models/index";
 import { v4 as uuidv4 } from "uuid";
 
 export class SettingsService {

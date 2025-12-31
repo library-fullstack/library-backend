@@ -1,4 +1,4 @@
-import connection from "../config/db.ts";
+import connection from "../config/db";
 import { RowDataPacket } from "mysql2";
 
 interface DashboardStats {

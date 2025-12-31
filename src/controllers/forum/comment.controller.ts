@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import type { AuthRequest } from "../../types/errors.ts";
-import ForumCommentService from "../../services/forum/comment.service.ts";
-import ForumNotificationService from "../../services/forum/notification.service.ts";
-import ForumPostService from "../../services/forum/post.service.ts";
-import notificationService from "../../services/notification.service.ts";
+import type { AuthRequest } from "../../types/errors";
+import ForumCommentService from "../../services/forum/comment.service";
+import ForumNotificationService from "../../services/forum/notification.service";
+import ForumPostService from "../../services/forum/post.service";
+import notificationService from "../../services/notification.service";
 
 export const ForumCommentController = {
   async getCommentsByPost(req: Request, res: Response): Promise<void> {

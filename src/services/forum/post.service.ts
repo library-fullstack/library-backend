@@ -1,4 +1,4 @@
-import connection from "../../config/db.ts";
+import connection from "../../config/db";
 import path from "path";
 import fs from "fs";
 

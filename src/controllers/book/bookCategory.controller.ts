@@ -4,7 +4,7 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
-} from "../../services/book/bookCategory.service.ts";
+} from "../../services/book/bookCategory.service";
 
 const getAllCategoriesController = async (
   req: Request,

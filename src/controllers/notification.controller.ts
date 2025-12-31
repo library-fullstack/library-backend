@@ -1,6 +1,6 @@
 import { Response } from "express";
-import type { AuthRequest } from "../types/errors.ts";
-import notificationService from "../services/notification.service.ts";
+import type { AuthRequest } from "../types/errors";
+import notificationService from "../services/notification.service";
 
 export const getNotifications = async (req: AuthRequest, res: Response) => {
   try {

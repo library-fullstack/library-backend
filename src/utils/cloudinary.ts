@@ -1,4 +1,4 @@
-import cloudinary from "../config/cloudinary.ts";
+import cloudinary from "../config/cloudinary";
 import type { UploadApiResponse, UploadApiErrorResponse } from "cloudinary";
 import fs from "fs";
 

@@ -4,7 +4,7 @@ import {
   createTag,
   attachTagToBook,
   detachTagFromBook,
-} from "../../services/book/tag.service.ts";
+} from "../../services/book/tag.service";
 
 const getAllTagsController = async (
   req: Request,

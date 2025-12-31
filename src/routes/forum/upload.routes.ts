@@ -2,8 +2,8 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { authMiddleware } from "../../middlewares/auth.middleware.ts";
-import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.ts";
+import { authMiddleware } from "../../middlewares/auth.middleware";
+import type { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -76,7 +76,7 @@ router.post(
       const isImage = req.file.mimetype.startsWith("image/");
 
       if (isImage) {
-        const cloudinary = (await import("../../config/cloudinary.ts")).default;
+        const cloudinary = (await import("../../config/cloudinary")).default;
         const result = await cloudinary.uploader.upload(req.file.path, {
           folder: "forum/attachments",
           resource_type: "image",

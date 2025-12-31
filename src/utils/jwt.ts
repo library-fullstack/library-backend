@@ -1,7 +1,7 @@
-import * as jwt from "jsonwebtoken";
-import { requireEnv } from "../config/env.ts";
+import jwt from "jsonwebtoken";
+import { requireEnv } from "../config/env";
 
-const jwtLib = jwt.default || jwt;
+const jwtLib = jwt;
 
 interface JwtPayload {
   id: string;

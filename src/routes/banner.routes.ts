@@ -8,17 +8,17 @@ import {
   updateBannerController,
   deleteBannerController,
   toggleBannerStatusController,
-} from "../controllers/banner.controller.ts";
-import { authorize } from "../middlewares/authorize.middleware.ts";
-import { authMiddleware } from "../middlewares/auth.middleware.ts";
+} from "../controllers/banner.controller";
+import { authorize } from "../middlewares/authorize.middleware";
+import { authMiddleware } from "../middlewares/auth.middleware";
 import {
   uploadBannerMiddleware,
   uploadBannerToCloudinary,
-} from "../middlewares/banner-upload.middleware.ts";
+} from "../middlewares/banner-upload.middleware";
 import {
   cacheMiddleware,
   invalidateCacheMiddleware,
-} from "../middlewares/cache.middleware.ts";
+} from "../middlewares/cache.middleware";
 
 const bannerPublicRoutes = Router();
 const bannerAdminRoutes = Router();

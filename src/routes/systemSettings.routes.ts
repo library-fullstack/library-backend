@@ -1,7 +1,7 @@
 import { Router } from "express";
-import * as systemSettingsController from "../controllers/systemSettings.controller.ts";
-import { authorize } from "../middlewares/authorize.middleware.ts";
-import { authMiddleware } from "../middlewares/auth.middleware.ts";
+import * as systemSettingsController from "../controllers/systemSettings.controller";
+import { authorize } from "../middlewares/authorize.middleware";
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
 

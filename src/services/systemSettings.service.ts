@@ -1,10 +1,10 @@
-import db from "../config/db.ts";
+import db from "../config/db";
 import { v4 as uuidv4 } from "uuid";
 import type {
   SystemSetting,
   CreateSystemSettingInput,
   UpdateSystemSettingInput,
-} from "../models/systemSettings.model.ts";
+} from "../models/systemSettings.model";
 
 class SystemSettingsService {
   async getAll(): Promise<SystemSetting[]> {

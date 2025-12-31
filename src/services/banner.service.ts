@@ -1,7 +1,7 @@
-import connection from "../config/db.ts";
-import { bannerModel } from "../models/index.ts";
+import connection from "../config/db";
+import { bannerModel } from "../models/index";
 import { v4 as uuidv4 } from "uuid";
-import cloudinary from "../config/cloudinary.ts";
+import cloudinary from "../config/cloudinary";
 
 const getAllBanners = async (
   page: number = 1,

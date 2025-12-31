@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { authMiddleware } from "../../middlewares/auth.middleware.ts";
+import { authMiddleware } from "../../middlewares/auth.middleware";
 import {
   cacheMiddleware,
   invalidateCacheMiddleware,
-} from "../../middlewares/cache.middleware.ts";
-import { verifyAccessToken } from "../../utils/token.ts";
+} from "../../middlewares/cache.middleware";
+import { verifyAccessToken } from "../../utils/token";
 import {
   createPost,
   getPosts,
@@ -14,9 +14,9 @@ import {
   deletePost,
   likePost,
   reportPost,
-} from "../../controllers/forum/post.controller.ts";
-import { ForumCommentController } from "../../controllers/forum/comment.controller.ts";
-import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.ts";
+} from "../../controllers/forum/post.controller";
+import { ForumCommentController } from "../../controllers/forum/comment.controller";
+import type { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 
 const router = Router();
 

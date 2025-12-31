@@ -1,8 +1,8 @@
-import connection from "../../config/db.ts";
+import connection from "../../config/db";
 import type {
   UserNotification,
   CreateNotificationInput,
-} from "../../models/forum/notification.model.ts";
+} from "../../models/forum/notification.model";
 
 function convertToISO(mysqlDateTime: any): string {
   if (!mysqlDateTime) return new Date().toISOString();

@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import fs from "fs";
-import cloudinary from "../../config/cloudinary.ts";
+import cloudinary from "../../config/cloudinary";
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });

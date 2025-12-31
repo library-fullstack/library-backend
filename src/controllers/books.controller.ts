@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import connection from "../config/db.ts";
+import connection from "../config/db";
 
 export const getAllBooks = async (req: Request, res: Response) => {
   try {

@@ -1,12 +1,12 @@
 import express from "express";
-import { authMiddleware } from "../../middlewares/auth.middleware.ts";
-import { authorize } from "../../middlewares/authorize.middleware.ts";
+import { authMiddleware } from "../../middlewares/auth.middleware";
+import { authorize } from "../../middlewares/authorize.middleware";
 import {
   cacheMiddleware,
   invalidateCacheMiddleware,
-} from "../../middlewares/cache.middleware.ts";
-import * as bookController from "../../controllers/book/book.controller.ts";
-import uploadRouter from "./upload.route.ts";
+} from "../../middlewares/cache.middleware";
+import * as bookController from "../../controllers/book/book.controller";
+import uploadRouter from "./upload.route";
 
 const router = express.Router();
 

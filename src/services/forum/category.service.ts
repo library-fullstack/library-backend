@@ -1,10 +1,10 @@
-import connection from "../../config/db.ts";
+import connection from "../../config/db";
 import { v4 as uuidv4 } from "uuid";
 import type {
   ForumCategory,
   CreateCategoryInput,
   UpdateCategoryInput,
-} from "../../models/forum/category.model.ts";
+} from "../../models/forum/category.model";
 
 const ForumCategoryService = {
   async getAllCategories(): Promise<ForumCategory[]> {

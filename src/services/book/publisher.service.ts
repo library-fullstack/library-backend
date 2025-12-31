@@ -1,5 +1,5 @@
-import connection from "../../config/db.ts";
-import { bookPublisherModel } from "../../models/index.ts";
+import connection from "../../config/db";
+import { bookPublisherModel } from "../../models/index";
 
 const getAllPublishers = async () => {
   const [rows] = await connection.query<bookPublisherModel.BookPublisher[]>(`

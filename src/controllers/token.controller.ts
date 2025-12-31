@@ -3,8 +3,8 @@ import {
   verifyRefreshToken,
   generateAccessToken,
   verifyRefreshTokenExists,
-} from "../utils/token.ts";
-import type { ApiError } from "../types/errors.ts";
+} from "../utils/token";
+import type { ApiError } from "../types/errors";
 
 export const refreshTokenController = async (req: Request, res: Response) => {
   try {
@@ -64,7 +64,7 @@ export const logoutController = async (req: Request, res: Response) => {
     if (refreshToken) {
       const decoded = verifyRefreshToken(refreshToken);
       if (decoded) {
-        const { revokeRefreshToken } = await import("../utils/token.ts");
+        const { revokeRefreshToken } = await import("../utils/token");
         await revokeRefreshToken(refreshToken);
       }
     }

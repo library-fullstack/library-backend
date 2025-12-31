@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { env } from "../config/env.ts";
-import { verifyAccessToken } from "../utils/token.ts";
+import { env } from "../config/env";
+import { verifyAccessToken } from "../utils/token";
 import * as jwt from "jsonwebtoken";
 
-const jwtLib = jwt.default || jwt;
+const jwtLib = jwt;
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;

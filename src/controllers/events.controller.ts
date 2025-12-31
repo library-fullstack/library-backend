@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
-import EventsService from "../services/events.service.ts";
-import type { AuthenticatedRequest } from "../middlewares/auth.middleware.ts";
+import EventsService from "../services/events.service";
+import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
 import type {
   CreateEventInput,
   UpdateEventInput,
   EventListFilter,
-} from "../models/events.model.ts";
-import connection from "../config/db.ts";
-import { sendEventNotificationEmail } from "../utils/emailTemplates.ts";
+} from "../models/events.model";
+import connection from "../config/db";
+import { sendEventNotificationEmail } from "../utils/emailTemplates";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 

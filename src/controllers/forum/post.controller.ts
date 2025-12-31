@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import ForumPostService from "../../services/forum/post.service.ts";
-import activityLogService from "../../services/activityLog.service.ts";
-import notificationService from "../../services/notification.service.ts";
-import { ActivityType } from "../../models/activityLog.model.ts";
-import connection from "../../config/db.ts";
-import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.ts";
+import ForumPostService from "../../services/forum/post.service";
+import activityLogService from "../../services/activityLog.service";
+import notificationService from "../../services/notification.service";
+import { ActivityType } from "../../models/activityLog.model";
+import connection from "../../config/db";
+import type { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 
 export const createPost = async (req: AuthenticatedRequest, res: Response) => {
   try {

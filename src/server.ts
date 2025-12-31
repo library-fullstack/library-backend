@@ -2,9 +2,9 @@ import https from "https";
 import http from "http";
 import fs from "fs";
 import path from "path";
-import app from "./app.ts";
-import { env } from "./config/env.ts";
-import { startBorrowReminderJob } from "./jobs/borrowReminder.job.ts";
+import app from "./app";
+import { env } from "./config/env";
+import { startBorrowReminderJob } from "./jobs/borrowReminder.job";
 
 const useHttps =
   fs.existsSync("origin.pem") && fs.existsSync("origin-private.pem");
@@ -18,7 +18,7 @@ if (useHttps) {
     cert: fs.readFileSync(path.join(process.cwd(), "origin.pem")),
   };
 
-  https.createServer(options, app).listen(4000, "0.0.0.0", () => {
+  https.createServer(options, app).listen(3000, "0.0.0.0", () => {
     console.log("HTTPS server chạy tại https://api.libsys.me");
   });
 } else {

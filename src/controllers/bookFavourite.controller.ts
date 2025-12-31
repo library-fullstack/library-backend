@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import type { ApiError, AuthRequest } from "../types/errors.ts";
-import BookFavouriteService from "../services/bookFavourite.service.ts";
+import type { ApiError, AuthRequest } from "../types/errors";
+import BookFavouriteService from "../services/bookFavourite.service";
 
 export const BookFavouriteController = {
   async getFavourites(req: AuthRequest, res: Response) {

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import type { ApiError } from "../types/errors.ts";
+import type { ApiError } from "../types/errors";
 
 export const errorMiddleware = (
   err: unknown,

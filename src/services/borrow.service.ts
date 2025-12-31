@@ -1,13 +1,13 @@
-import connection from "../config/db.ts";
-import BorrowCartService from "./borrowCart.service.ts";
+import connection from "../config/db";
+import BorrowCartService from "./borrowCart.service";
 import {
   Borrow,
   BorrowWithDetails,
   BorrowStatus,
   ReturnReason,
   ConfirmBorrowInput,
-} from "../models/borrow.model.ts";
-import { BorrowDetailWithBook } from "../models/borrowDetail.model.ts";
+} from "../models/borrow.model";
+import { BorrowDetailWithBook } from "../models/borrowDetail.model";
 
 interface CreateBorrowItem {
   book_id: number;

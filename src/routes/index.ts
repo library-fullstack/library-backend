@@ -1,38 +1,38 @@
 import express from "express";
-import bookRouter from "./book/book.routes.ts";
-import bookUploadRouter from "./book/upload.routes.ts";
-import authorRouter from "./book/bookAuthor.route.ts";
-import categoryRouter from "./book/bookCategory.route.ts";
-import imageRouter from "./book/bookImage.route.ts";
-import publisherRouter from "./book/publisher.route.ts";
-import tagRouter from "./book/tag.route.ts";
-import authRoute from "./auth.routes.ts";
-import adminRoute from "./admin.routes.ts";
-import userRoute from "./user.routes.ts";
-import statisticsRoute from "./statistics.routes.ts";
-import forumPostRoute from "./forum/post.routes.ts";
-import forumCommentRoute from "./forum/comment.routes.ts";
-import forumCategoryRoute from "./forum/category.routes.ts";
-import forumSearchRoute from "./forum/search.routes.ts";
-import forumUploadRoute from "./forum/upload.routes.ts";
-import forumModerationRoute from "./forum/moderation.routes.ts";
-import borrowCartRoute from "./borrowCart.routes.ts";
-import borrowRoute from "./borrow.routes.ts";
-import bookFavouriteRoute from "./bookFavourite.routes.ts";
-import { bannerPublicRoutes, bannerAdminRoutes } from "./banner.routes.ts";
-import { settingsAdminRoutes } from "./settings.routes.ts";
-import metricsRoute from "./metrics.routes.ts";
-import newsRoute from "./news.routes.ts";
-import eventsRoute from "./events.routes.ts";
-import activityLogRoute from "./activityLog.routes.ts";
-import systemSettingsRoute from "./systemSettings.routes.ts";
-import uploadRoute from "./upload.routes.ts";
-import notificationRoute from "./notification.routes.ts";
-import SettingsService from "../services/settings.service.ts";
+import bookRouter from "./book/book.routes";
+import bookUploadRouter from "./book/upload.routes";
+import authorRouter from "./book/bookAuthor.route";
+import categoryRouter from "./book/bookCategory.route";
+import imageRouter from "./book/bookImage.route";
+import publisherRouter from "./book/publisher.route";
+import tagRouter from "./book/tag.route";
+import authRoute from "./auth.routes";
+import adminRoute from "./admin.routes";
+import userRoute from "./user.routes";
+import statisticsRoute from "./statistics.routes";
+import forumPostRoute from "./forum/post.routes";
+import forumCommentRoute from "./forum/comment.routes";
+import forumCategoryRoute from "./forum/category.routes";
+import forumSearchRoute from "./forum/search.routes";
+import forumUploadRoute from "./forum/upload.routes";
+import forumModerationRoute from "./forum/moderation.routes";
+import borrowCartRoute from "./borrowCart.routes";
+import borrowRoute from "./borrow.routes";
+import bookFavouriteRoute from "./bookFavourite.routes";
+import { bannerPublicRoutes, bannerAdminRoutes } from "./banner.routes";
+import { settingsAdminRoutes } from "./settings.routes";
+import metricsRoute from "./metrics.routes";
+import newsRoute from "./news.routes";
+import eventsRoute from "./events.routes";
+import activityLogRoute from "./activityLog.routes";
+import systemSettingsRoute from "./systemSettings.routes";
+import uploadRoute from "./upload.routes";
+import notificationRoute from "./notification.routes";
+import SettingsService from "../services/settings.service";
 
 const router = express.Router();
 
-import connection from "../config/db.ts";
+import connection from "../config/db";
 router.get("/health", async (req, res) => {
   try {
     await connection.query("SELECT 1");
@@ -99,7 +99,7 @@ router.use("/notifications", notificationRoute);
 
 router.use("/metrics", metricsRoute);
 
-import { cacheMiddleware } from "../middlewares/cache.middleware.ts";
+import { cacheMiddleware } from "../middlewares/cache.middleware";
 
 router.get(
   "/settings/:key",

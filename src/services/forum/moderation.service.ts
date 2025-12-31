@@ -1,4 +1,4 @@
-import connection from "../../config/db.ts";
+import connection from "../../config/db";
 
 const ForumModerationService = {
   async approvePost(

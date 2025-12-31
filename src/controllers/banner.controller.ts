@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import type { ApiError, AuthRequest } from "../types/errors.ts";
-import bannerService from "../services/banner.service.ts";
-import { bannerModel } from "../models/index.ts";
-import { snakeToCamel, camelToSnake } from "../utils/case-converter.ts";
+import type { ApiError, AuthRequest } from "../types/errors";
+import bannerService from "../services/banner.service";
+import { bannerModel } from "../models/index";
+import { snakeToCamel, camelToSnake } from "../utils/case-converter";
 
 const uploadBannerImageController = async (
   req: AuthRequest,

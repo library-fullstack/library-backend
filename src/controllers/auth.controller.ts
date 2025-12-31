@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
-import type { ApiError, AuthRequest } from "../types/errors.ts";
-import { authService } from "../services/auth.service.ts";
-import { verificationService } from "../services/verification.service.ts";
-import userServices from "../services/user.service.ts";
-import { hashPassword, verifyPassword } from "../utils/password.ts";
+import type { ApiError, AuthRequest } from "../types/errors";
+import { authService } from "../services/auth.service";
+import { verificationService } from "../services/verification.service";
+import userServices from "../services/user.service";
+import { hashPassword, verifyPassword } from "../utils/password";
 import {
   refreshTokenController,
   logoutController,
-} from "./token.controller.ts";
+} from "./token.controller";
 
 // đăng ký controller
 export const registerController = async (req: Request, res: Response) => {

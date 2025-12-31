@@ -1,10 +1,10 @@
 import { Router, Request, Response } from "express";
-import { authMiddleware } from "../../middlewares/auth.middleware.ts";
+import { authMiddleware } from "../../middlewares/auth.middleware";
 import {
   cacheMiddleware,
   invalidateCacheMiddleware,
-} from "../../middlewares/cache.middleware.ts";
-import ForumReportService from "../../services/forum/report.service.ts";
+} from "../../middlewares/cache.middleware";
+import ForumReportService from "../../services/forum/report.service";
 
 const router = Router();
 

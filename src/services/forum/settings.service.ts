@@ -1,4 +1,4 @@
-import connection from "../../config/db.ts";
+import connection from "../../config/db";
 
 export interface ForumSettings {
   allow_students_create_post: boolean;

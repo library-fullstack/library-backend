@@ -1,4 +1,4 @@
-import connection from "../../config/db.ts";
+import connection from "../../config/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export async function findOrCreateAuthor(name: string): Promise<number> {

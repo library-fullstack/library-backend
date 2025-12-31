@@ -1,7 +1,7 @@
 import express from "express";
-import { authMiddleware } from "../../middlewares/auth.middleware.ts";
-import { authorize } from "../../middlewares/authorize.middleware.ts";
-import * as controller from "../../controllers/book/bookImage.controller.ts";
+import { authMiddleware } from "../../middlewares/auth.middleware";
+import { authorize } from "../../middlewares/authorize.middleware";
+import * as controller from "../../controllers/book/bookImage.controller";
 
 const router = express.Router();
 

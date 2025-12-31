@@ -9,9 +9,9 @@ import {
   countBookStats,
   isBookAvailable,
   countPublicBooks,
-} from "../../services/book/book.service.ts";
-import { BookInput, BookInputFull } from "../../models/book.model.ts";
-import { isValidBookSort } from "../../types/common.ts";
+} from "../../services/book/book.service";
+import { BookInput, BookInputFull } from "../../models/book.model";
+import { isValidBookSort } from "../../types/common";
 
 // lấy danh sách sách
 const getAllBooksController = async (
