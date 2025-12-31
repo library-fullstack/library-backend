@@ -397,5 +397,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Built with Express.js and TypeScript
 - Thanks to the open source community
 - Inspired by modern API design practices
-
----
