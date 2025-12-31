@@ -392,13 +392,6 @@ We welcome contributions! Please:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Contact & Support
-
-- Author: Trần Kính Hoàng (hoaug)
-- Email: [your-email@example.com]
-- GitHub: [your-github-profile]
-- Issues: Please report bugs via GitHub Issues
-
 ## Acknowledgments
 
 - Built with Express.js and TypeScript
@@ -406,7 +399,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Inspired by modern API design practices
 
 ---
-
-Last Updated: December 31, 2025
-Language: Professional English
-Status: Ready for Production
