@@ -28,68 +28,22 @@ app.use(
 
 app.use(
   compression({
-    filter: (req, res) => {
-      if (req.headers["x-no-compression"]) {
-        return false;
-      }
-      return compression.filter(req, res);
-    },
     level: 6,
   })
 );
 
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    return next();
-  }
-  standardRateLimit(req, res, next);
-});
-
-const allowedOrigins = env.FRONTEND_ORIGINS;
-
-console.log("Cấu hình CORS:");
-console.log("Các tên miền cho phép yêu cầu:", allowedOrigins);
-console.log("LAN IP hỗ trợ: 192.168.x.x,171.x.x.x, 172.x.x.x");
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) {
-        if (process.env.NODE_ENV === "production") {
-          console.log("CORS: Rejecting request without origin in production");
-          return callback(new Error("Origin header required in production"));
-        }
-        console.log("CORS: Cho phép yêu cầu khi không có tên miền (dev mode)");
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        console.log("CORS: Cho phép tiền miền từ whitelist:", origin);
-        return callback(null, true);
-      }
-
-      const isLAN =
-        /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) ||
-        /^http:\/\/172\.\d+\.\d+\.\d+(:\d+)?$/.test(origin) ||
-        /^http:\/\/171\.\d+\.\d+\.\d+(:\d+)?$/.test(origin) ||
-        /^http:\/\/116\.111\.115\.235(:\d+)?$/.test(origin) ||
-        /^http:\/\/172\.24\.160\.1(:\d+)?$/.test(origin);
-
-      if (isLAN) {
-        console.log("CORS: Cho phép LAN IP:", origin);
-        return callback(null, true);
-      }
-
-      console.error("CORS: Chặn yêu cầu từ tên miền:", origin);
-      callback(new Error("Không cho phép truy cập"));
-    },
+    origin: ["https://hbh.libsys.me"],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   })
 );
 
 app.use("/api/v1", router);
+
 app.use(errorMiddleware);
 
 export default app;
