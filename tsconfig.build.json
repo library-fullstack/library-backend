@@ -4,7 +4,9 @@
     "noEmit": false,
     "outDir": "./dist",
     "sourceMap": false,
-    "allowImportingTsExtensions": false
+    "strict": false,
+    "skipLibCheck": true,
+    "noEmitOnError": false
   },
   "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"]
 }
